@@ -5,8 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"maps"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,14 +18,15 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/crush/internal/agent/hyper"
-	"github.com/charmbracelet/crush/internal/csync"
-	"github.com/charmbracelet/crush/internal/env"
-	"github.com/charmbracelet/crush/internal/fsext"
-	"github.com/charmbracelet/crush/internal/home"
-	"github.com/charmbracelet/crush/internal/log"
+	"github.com/charmbracelet/swarmy/internal/agent/hyper"
+	"github.com/charmbracelet/swarmy/internal/csync"
+	"github.com/charmbracelet/swarmy/internal/env"
+	"github.com/charmbracelet/swarmy/internal/fsext"
+	"github.com/charmbracelet/swarmy/internal/home"
+	"github.com/charmbracelet/swarmy/internal/log"
 	powernapConfig "github.com/charmbracelet/x/powernap/pkg/config"
 	"github.com/qjebbs/go-jsons"
 )
@@ -97,12 +101,12 @@ func Load(workingDir, dataDir string, debug bool) (*Config, error) {
 func PushPopCrushEnv() func() {
 	var found []string
 	for _, ev := range os.Environ() {
-		if strings.HasPrefix(ev, "CRUSH_") {
+		if strings.HasPrefix(ev, "SWARMY_") {
 			pair := strings.SplitN(ev, "=", 2)
 			if len(pair) != 2 {
 				continue
 			}
-			found = append(found, strings.TrimPrefix(pair[0], "CRUSH_"))
+			found = append(found, strings.TrimPrefix(pair[0], "SWARMY_"))
 		}
 	}
 	backups := make(map[string]string)
@@ -111,7 +115,7 @@ func PushPopCrushEnv() func() {
 	}
 
 	for _, ev := range found {
-		os.Setenv(ev, os.Getenv("CRUSH_"+ev))
+		os.Setenv(ev, os.Getenv("SWARMY_"+ev))
 	}
 
 	restore := func() {
@@ -274,6 +278,10 @@ func (c *Config) configureProviders(env env.Env, resolver VariableResolver, know
 		c.Providers.Set(string(p.ID), prepared)
 	}
 
+	// Inject generic providers from well-known environment variables so users
+	// can point swarmy at a local or proxy LLM endpoint with zero config.
+	c.injectEnvProviders(env)
+
 	// validate the custom providers
 	for id, providerConfig := range c.Providers.Seq2() {
 		if knownProviderNames[id] {
@@ -282,7 +290,6 @@ func (c *Config) configureProviders(env env.Env, resolver VariableResolver, know
 
 		// Make sure the provider ID is set
 		providerConfig.ID = id
-		providerConfig.Name = cmp.Or(providerConfig.Name, id) // Use ID as name if not set
 		// default to OpenAI if not set
 		providerConfig.Type = cmp.Or(providerConfig.Type, catwalk.TypeOpenAICompat)
 		if !slices.Contains(catwalk.KnownProviderTypes(), providerConfig.Type) && providerConfig.Type != hyper.Name {
@@ -305,9 +312,29 @@ func (c *Config) configureProviders(env env.Env, resolver VariableResolver, know
 			continue
 		}
 		if len(providerConfig.Models) == 0 {
-			slog.Warn("Skipping custom provider because the provider has no models", "provider", id)
-			c.Providers.Del(id)
-			continue
+			// For OpenAI-compatible providers (or when discover_models is
+			// explicitly requested), attempt to fetch the model list from
+			// the provider's /models endpoint before giving up.
+			if providerConfig.Type == catwalk.TypeOpenAICompat || providerConfig.DiscoverModels {
+				resolvedKey, _ := resolver.ResolveValue(providerConfig.APIKey)
+				resolvedBase, _ := resolver.ResolveValue(providerConfig.BaseURL)
+				discovered, err := fetchOpenAICompatModels(resolvedBase, resolvedKey)
+				if err != nil {
+					slog.Warn("Skipping custom provider: could not discover models", "provider", id, "error", err)
+					c.Providers.Del(id)
+					continue
+				}
+				if len(discovered) == 0 {
+					slog.Warn("Skipping custom provider: no models discovered from endpoint", "provider", id)
+					c.Providers.Del(id)
+					continue
+				}
+				providerConfig.Models = discovered
+			} else {
+				slog.Warn("Skipping custom provider because the provider has no models", "provider", id)
+				c.Providers.Del(id)
+				continue
+			}
 		}
 		apiKey, err := resolver.ResolveValue(providerConfig.APIKey)
 		if apiKey == "" || err != nil {
@@ -319,6 +346,7 @@ func (c *Config) configureProviders(env env.Env, resolver VariableResolver, know
 			c.Providers.Del(id)
 			continue
 		}
+		providerConfig.Name = cmp.Or(providerConfig.Name, defaultCustomProviderName(providerConfig.Type, baseURL, id))
 
 		for k, v := range providerConfig.ExtraHeaders {
 			resolved, err := resolver.ResolveValue(v)
@@ -337,6 +365,129 @@ func (c *Config) configureProviders(env env.Env, resolver VariableResolver, know
 	}
 
 	return nil
+}
+
+// injectEnvProviders adds synthetic provider entries from well-known
+// environment variables so users can point swarmy at a local or proxy LLM
+// endpoint without touching swarmy.json.
+func (c *Config) injectEnvProviders(e env.Env) {
+	// Support OPENAI_BASE_URL and the legacy OPENAI_API_BASE that many
+	// OpenAI-compatible tools use to point at a custom endpoint.
+	for _, envVar := range []string{"OPENAI_BASE_URL", "OPENAI_API_BASE"} {
+		if baseURL := e.Get(envVar); baseURL != "" {
+			const id = "openai-custom"
+			if _, exists := c.Providers.Get(id); !exists {
+				c.Providers.Set(id, ProviderConfig{
+					ID:             id,
+					BaseURL:        baseURL,
+					Type:           catwalk.TypeOpenAICompat,
+					APIKey:         e.Get("OPENAI_API_KEY"),
+					DiscoverModels: true,
+				})
+			}
+			break
+		}
+	}
+
+	// Support ANTHROPIC_BASE_URL for custom Anthropic-compatible endpoints.
+	if baseURL := e.Get("ANTHROPIC_BASE_URL"); baseURL != "" {
+		const id = "anthropic-custom"
+		if _, exists := c.Providers.Get(id); !exists {
+			c.Providers.Set(id, ProviderConfig{
+				ID:      id,
+				BaseURL: baseURL,
+				Type:    catwalk.TypeAnthropic,
+				APIKey:  e.Get("ANTHROPIC_API_KEY"),
+			})
+		}
+	}
+}
+
+func defaultCustomProviderName(providerType catwalk.Type, baseURL, fallback string) string {
+	parsed, err := url.Parse(baseURL)
+	if err != nil || parsed.Host == "" {
+		return fallback
+	}
+
+	label := providerTypeLabel(providerType)
+	if label == "" {
+		return parsed.Host
+	}
+
+	return fmt.Sprintf("%s (%s)", label, parsed.Host)
+}
+
+func providerTypeLabel(providerType catwalk.Type) string {
+	switch providerType {
+	case catwalk.TypeOpenAI, catwalk.TypeOpenAICompat, catwalk.TypeOpenRouter:
+		return "OpenAI Compatible"
+	case catwalk.TypeAnthropic:
+		return "Anthropic Compatible"
+	case catwalk.TypeGoogle:
+		return "Google Compatible"
+	case catwalk.TypeAzure:
+		return "Azure OpenAI"
+	case catwalk.TypeVertexAI:
+		return "Vertex AI"
+	default:
+		return ""
+	}
+}
+
+// openAIModelsResponse is the JSON shape returned by GET /v1/models on
+// OpenAI-compatible endpoints.
+type openAIModelsResponse struct {
+	Data []struct {
+		ID string `json:"id"`
+	} `json:"data"`
+}
+
+// fetchOpenAICompatModels calls GET {baseURL}/models and returns the model
+// list as a slice of catwalk.Model. It is best-effort: callers should treat
+// an error as "skip the provider" rather than a fatal failure.
+func fetchOpenAICompatModels(baseURL, apiKey string) ([]catwalk.Model, error) {
+	endpoint := strings.TrimRight(baseURL, "/") + "/models"
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, fmt.Errorf("build request: %w", err)
+	}
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+	req.Header.Set("Accept", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status %d from %s", resp.StatusCode, endpoint)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response: %w", err)
+	}
+
+	var result openAIModelsResponse
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("parse response: %w", err)
+	}
+
+	models := make([]catwalk.Model, 0, len(result.Data))
+	for _, m := range result.Data {
+		if m.ID == "" {
+			continue
+		}
+		models = append(models, catwalk.Model{
+			ID:   m.ID,
+			Name: m.ID,
+		})
+	}
+	return models, nil
 }
 
 func (c *Config) setDefaults(workingDir, dataDir string) {
@@ -387,11 +538,11 @@ func (c *Config) setDefaults(workingDir, dataDir string) {
 		}
 	}
 
-	if str, ok := os.LookupEnv("CRUSH_DISABLE_PROVIDER_AUTO_UPDATE"); ok {
+	if str, ok := os.LookupEnv("SWARMY_DISABLE_PROVIDER_AUTO_UPDATE"); ok {
 		c.Options.DisableProviderAutoUpdate, _ = strconv.ParseBool(str)
 	}
 
-	if str, ok := os.LookupEnv("CRUSH_DISABLE_DEFAULT_PROVIDERS"); ok {
+	if str, ok := os.LookupEnv("SWARMY_DISABLE_DEFAULT_PROVIDERS"); ok {
 		c.Options.DisableDefaultProviders, _ = strconv.ParseBool(str)
 	}
 
@@ -411,6 +562,12 @@ func (c *Config) setDefaults(workingDir, dataDir string) {
 		} else {
 			c.Options.Attribution.TrailerStyle = TrailerStyleAssistedBy
 		}
+	}
+	c.Options.AgentArchitecture = NormalizeAgentArchitecture(c.Options.AgentArchitecture)
+	if c.Options.Swarm == nil {
+		c.Options.Swarm = &SwarmOptions{Enabled: c.Options.AgentArchitecture == AgentArchitectureSwarm}
+	} else if c.Options.AgentArchitecture == AgentArchitectureSwarm {
+		c.Options.Swarm.Enabled = true
 	}
 	c.Options.InitializeAs = cmp.Or(c.Options.InitializeAs, defaultInitializeAs)
 }
@@ -712,8 +869,8 @@ func hasAWSCredentials(env env.Env) bool {
 
 // GlobalConfig returns the global configuration file path for the application.
 func GlobalConfig() string {
-	if crushGlobal := os.Getenv("CRUSH_GLOBAL_CONFIG"); crushGlobal != "" {
-		return filepath.Join(crushGlobal, fmt.Sprintf("%s.json", appName))
+	if swarmyGlobal := os.Getenv("SWARMY_GLOBAL_CONFIG"); swarmyGlobal != "" {
+		return filepath.Join(swarmyGlobal, fmt.Sprintf("%s.json", appName))
 	}
 	if xdgConfigHome := os.Getenv("XDG_CONFIG_HOME"); xdgConfigHome != "" {
 		return filepath.Join(xdgConfigHome, appName, fmt.Sprintf("%s.json", appName))
@@ -724,16 +881,16 @@ func GlobalConfig() string {
 // GlobalConfigData returns the path to the main data directory for the application.
 // this config is used when the app overrides configurations instead of updating the global config.
 func GlobalConfigData() string {
-	if crushData := os.Getenv("CRUSH_GLOBAL_DATA"); crushData != "" {
-		return filepath.Join(crushData, fmt.Sprintf("%s.json", appName))
+	if swarmyData := os.Getenv("SWARMY_GLOBAL_DATA"); swarmyData != "" {
+		return filepath.Join(swarmyData, fmt.Sprintf("%s.json", appName))
 	}
 	if xdgDataHome := os.Getenv("XDG_DATA_HOME"); xdgDataHome != "" {
 		return filepath.Join(xdgDataHome, appName, fmt.Sprintf("%s.json", appName))
 	}
 
 	// return the path to the main data directory
-	// for windows, it should be in `%LOCALAPPDATA%/crush/`
-	// for linux and macOS, it should be in `$HOME/.local/share/crush/`
+	// for windows, it should be in `%LOCALAPPDATA%/swarmy/`
+	// for linux and macOS, it should be in `$HOME/.local/share/swarmy/`
 	if runtime.GOOS == "windows" {
 		localAppData := cmp.Or(
 			os.Getenv("LOCALAPPDATA"),
@@ -764,8 +921,8 @@ func isInsideWorktree() bool {
 // Skills in these directories are auto-discovered and their files can be read
 // without permission prompts.
 func GlobalSkillsDirs() []string {
-	if crushSkills := os.Getenv("CRUSH_SKILLS_DIR"); crushSkills != "" {
-		return []string{crushSkills}
+	if swarmySkills := os.Getenv("SWARMY_SKILLS_DIR"); swarmySkills != "" {
+		return []string{swarmySkills}
 	}
 
 	// Determine the base config directory.

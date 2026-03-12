@@ -8,14 +8,14 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/crush/internal/commands"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/message"
-	"github.com/charmbracelet/crush/internal/oauth"
-	"github.com/charmbracelet/crush/internal/permission"
-	"github.com/charmbracelet/crush/internal/session"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/util"
+	"github.com/charmbracelet/swarmy/internal/commands"
+	"github.com/charmbracelet/swarmy/internal/config"
+	"github.com/charmbracelet/swarmy/internal/message"
+	"github.com/charmbracelet/swarmy/internal/oauth"
+	"github.com/charmbracelet/swarmy/internal/permission"
+	"github.com/charmbracelet/swarmy/internal/session"
+	"github.com/charmbracelet/swarmy/internal/ui/common"
+	"github.com/charmbracelet/swarmy/internal/ui/util"
 )
 
 // ActionClose is a message to close the current dialog.
@@ -40,6 +40,10 @@ type ActionSelectModel struct {
 	Model          config.SelectedModel
 	ModelType      config.SelectedModelType
 	ReAuthenticate bool
+}
+
+type ActionSelectArchitecture struct {
+	Architecture config.AgentArchitecture
 }
 
 // Messages for commands

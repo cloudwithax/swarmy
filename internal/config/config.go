@@ -15,20 +15,20 @@ import (
 	"time"
 
 	"charm.land/catwalk/pkg/catwalk"
-	hyperp "github.com/charmbracelet/crush/internal/agent/hyper"
-	"github.com/charmbracelet/crush/internal/csync"
-	"github.com/charmbracelet/crush/internal/env"
-	"github.com/charmbracelet/crush/internal/oauth"
-	"github.com/charmbracelet/crush/internal/oauth/copilot"
-	"github.com/charmbracelet/crush/internal/oauth/hyper"
+	hyperp "github.com/charmbracelet/swarmy/internal/agent/hyper"
+	"github.com/charmbracelet/swarmy/internal/csync"
+	"github.com/charmbracelet/swarmy/internal/env"
+	"github.com/charmbracelet/swarmy/internal/oauth"
+	"github.com/charmbracelet/swarmy/internal/oauth/copilot"
+	"github.com/charmbracelet/swarmy/internal/oauth/hyper"
 	"github.com/invopop/jsonschema"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
 
 const (
-	appName              = "crush"
-	defaultDataDirectory = ".crush"
+	appName              = "swarmy"
+	defaultDataDirectory = ".swarmy"
 	defaultInitializeAs  = "AGENTS.md"
 )
 
@@ -40,10 +40,10 @@ var defaultContextPaths = []string{
 	"CLAUDE.local.md",
 	"GEMINI.md",
 	"gemini.md",
-	"crush.md",
-	"crush.local.md",
-	"Crush.md",
-	"Crush.local.md",
+	"swarmy.md",
+	"swarmy.local.md",
+	"Swarmy.md",
+	"Swarmy.local.md",
 	"CRUSH.md",
 	"CRUSH.local.md",
 	"AGENTS.md",
@@ -61,6 +61,13 @@ func (s SelectedModelType) String() string {
 const (
 	SelectedModelTypeLarge SelectedModelType = "large"
 	SelectedModelTypeSmall SelectedModelType = "small"
+)
+
+type AgentArchitecture string
+
+const (
+	AgentArchitectureSolo  AgentArchitecture = "solo"
+	AgentArchitectureSwarm AgentArchitecture = "swarm"
 )
 
 const (
@@ -127,6 +134,10 @@ type ProviderConfig struct {
 
 	// The provider models
 	Models []catwalk.Model `json:"models,omitempty" jsonschema:"description=List of models available from this provider"`
+	// DiscoverModels, if true, auto-discovers models via the provider's /models
+	// endpoint when no models are explicitly configured. Enabled by default
+	// for openai-compat providers with no models listed.
+	DiscoverModels bool `json:"discover_models,omitempty" jsonschema:"description=Auto-discover models from the provider's /models endpoint when no models are configured,default=false"`
 }
 
 // ToProvider converts the [ProviderConfig] to a [catwalk.Provider].
@@ -233,7 +244,21 @@ const (
 type Attribution struct {
 	TrailerStyle  TrailerStyle `json:"trailer_style,omitempty" jsonschema:"description=Style of attribution trailer to add to commits,enum=none,enum=co-authored-by,enum=assisted-by,default=assisted-by"`
 	CoAuthoredBy  *bool        `json:"co_authored_by,omitempty" jsonschema:"description=Deprecated: use trailer_style instead"`
-	GeneratedWith bool         `json:"generated_with,omitempty" jsonschema:"description=Add Generated with Crush line to commit messages and issues and PRs,default=true"`
+	GeneratedWith bool         `json:"generated_with,omitempty" jsonschema:"description=Add Generated with Swarmy line to commit messages and issues and PRs,default=true"`
+}
+
+type SwarmOptions struct {
+	Enabled              bool `json:"enabled,omitempty" jsonschema:"description=Enable swarm execution where a planner selects files and one worker agent is assigned per file,default=true"`
+	MaxFiles             *int `json:"max_files,omitempty" jsonschema:"description=Maximum number of files the swarm planner may assign in a single pass,default=8,example=4,example=8,example=16"`
+	MaxConcurrentWorkers *int `json:"max_concurrent_workers,omitempty" jsonschema:"description=Maximum number of file workers to run concurrently,default=4,example=2,example=4,example=8"`
+}
+
+func (s SwarmOptions) MaxPlannedFiles() int {
+	return ptrValOr(s.MaxFiles, 8)
+}
+
+func (s SwarmOptions) MaxWorkers() int {
+	return ptrValOr(s.MaxConcurrentWorkers, 4)
 }
 
 // JSONSchemaExtend marks the co_authored_by field as deprecated in the schema.
@@ -246,22 +271,24 @@ func (Attribution) JSONSchemaExtend(schema *jsonschema.Schema) {
 }
 
 type Options struct {
-	ContextPaths              []string     `json:"context_paths,omitempty" jsonschema:"description=Paths to files containing context information for the AI,example=.cursorrules,example=CRUSH.md"`
-	SkillsPaths               []string     `json:"skills_paths,omitempty" jsonschema:"description=Paths to directories containing Agent Skills (folders with SKILL.md files),example=~/.config/crush/skills,example=./skills"`
-	TUI                       *TUIOptions  `json:"tui,omitempty" jsonschema:"description=Terminal user interface options"`
-	Debug                     bool         `json:"debug,omitempty" jsonschema:"description=Enable debug logging,default=false"`
-	DebugLSP                  bool         `json:"debug_lsp,omitempty" jsonschema:"description=Enable debug logging for LSP servers,default=false"`
-	DisableAutoSummarize      bool         `json:"disable_auto_summarize,omitempty" jsonschema:"description=Disable automatic conversation summarization,default=false"`
-	DataDirectory             string       `json:"data_directory,omitempty" jsonschema:"description=Directory for storing application data (relative to working directory),default=.crush,example=.crush"` // Relative to the cwd
-	DisabledTools             []string     `json:"disabled_tools,omitempty" jsonschema:"description=List of built-in tools to disable and hide from the agent,example=bash,example=sourcegraph"`
-	DisableProviderAutoUpdate bool         `json:"disable_provider_auto_update,omitempty" jsonschema:"description=Disable providers auto-update,default=false"`
-	DisableDefaultProviders   bool         `json:"disable_default_providers,omitempty" jsonschema:"description=Ignore all default/embedded providers. When enabled, providers must be fully specified in the config file with base_url, models, and api_key - no merging with defaults occurs,default=false"`
-	Attribution               *Attribution `json:"attribution,omitempty" jsonschema:"description=Attribution settings for generated content"`
-	DisableMetrics            bool         `json:"disable_metrics,omitempty" jsonschema:"description=Disable sending metrics,default=false"`
-	InitializeAs              string       `json:"initialize_as,omitempty" jsonschema:"description=Name of the context file to create/update during project initialization,default=AGENTS.md,example=AGENTS.md,example=CRUSH.md,example=CLAUDE.md,example=docs/LLMs.md"`
-	AutoLSP                   *bool        `json:"auto_lsp,omitempty" jsonschema:"description=Automatically setup LSPs based on root markers,default=true"`
-	Progress                  *bool        `json:"progress,omitempty" jsonschema:"description=Show indeterminate progress updates during long operations,default=true"`
-	DisableNotifications      bool         `json:"disable_notifications,omitempty" jsonschema:"description=Disable desktop notifications,default=false"`
+	ContextPaths              []string          `json:"context_paths,omitempty" jsonschema:"description=Paths to files containing context information for the AI,example=.cursorrules,example=CRUSH.md"`
+	SkillsPaths               []string          `json:"skills_paths,omitempty" jsonschema:"description=Paths to directories containing Agent Skills (folders with SKILL.md files),example=~/.config/swarmy/skills,example=./skills"`
+	TUI                       *TUIOptions       `json:"tui,omitempty" jsonschema:"description=Terminal user interface options"`
+	AgentArchitecture         AgentArchitecture `json:"agent_architecture,omitempty" jsonschema:"description=Execution architecture for coding tasks,enum=solo,enum=swarm,default=swarm"`
+	Swarm                     *SwarmOptions     `json:"swarm,omitempty" jsonschema:"description=Swarm planner and worker settings"`
+	Debug                     bool              `json:"debug,omitempty" jsonschema:"description=Enable debug logging,default=false"`
+	DebugLSP                  bool              `json:"debug_lsp,omitempty" jsonschema:"description=Enable debug logging for LSP servers,default=false"`
+	DisableAutoSummarize      bool              `json:"disable_auto_summarize,omitempty" jsonschema:"description=Disable automatic conversation summarization,default=false"`
+	DataDirectory             string            `json:"data_directory,omitempty" jsonschema:"description=Directory for storing application data (relative to working directory),default=.swarmy,example=.swarmy"` // Relative to the cwd
+	DisabledTools             []string          `json:"disabled_tools,omitempty" jsonschema:"description=List of built-in tools to disable and hide from the agent,example=bash,example=sourcegraph"`
+	DisableProviderAutoUpdate bool              `json:"disable_provider_auto_update,omitempty" jsonschema:"description=Disable providers auto-update,default=false"`
+	DisableDefaultProviders   bool              `json:"disable_default_providers,omitempty" jsonschema:"description=Ignore all default/embedded providers. When enabled, providers must be fully specified in the config file with base_url, models, and api_key - no merging with defaults occurs,default=false"`
+	Attribution               *Attribution      `json:"attribution,omitempty" jsonschema:"description=Attribution settings for generated content"`
+	DisableMetrics            bool              `json:"disable_metrics,omitempty" jsonschema:"description=Disable sending metrics,default=false"`
+	InitializeAs              string            `json:"initialize_as,omitempty" jsonschema:"description=Name of the context file to create/update during project initialization,default=AGENTS.md,example=AGENTS.md,example=CRUSH.md,example=CLAUDE.md,example=docs/LLMs.md"`
+	AutoLSP                   *bool             `json:"auto_lsp,omitempty" jsonschema:"description=Automatically setup LSPs based on root markers,default=true"`
+	Progress                  *bool             `json:"progress,omitempty" jsonschema:"description=Show indeterminate progress updates during long operations,default=true"`
+	DisableNotifications      bool              `json:"disable_notifications,omitempty" jsonschema:"description=Disable desktop notifications,default=false"`
 }
 
 type MCPs map[string]MCPConfig
@@ -374,7 +401,7 @@ func (t ToolGrep) GetTimeout() time.Duration {
 	return ptrValOr(t.Timeout, 5*time.Second)
 }
 
-// Config holds the configuration for crush.
+// Config holds the configuration for swarmy.
 type Config struct {
 	Schema string `json:"$schema,omitempty"`
 
@@ -409,6 +436,71 @@ type Config struct {
 
 func (c *Config) WorkingDir() string {
 	return c.workingDir
+}
+
+func NormalizeAgentArchitecture(mode AgentArchitecture) AgentArchitecture {
+	switch mode {
+	case "":
+		return AgentArchitectureSwarm
+	case "single":
+		return AgentArchitectureSolo
+	case AgentArchitectureSolo, AgentArchitectureSwarm:
+		return mode
+	default:
+		return AgentArchitectureSwarm
+	}
+}
+
+func (c *Config) SwarmEnabled() bool {
+	if c.Options == nil {
+		return false
+	}
+	return NormalizeAgentArchitecture(c.Options.AgentArchitecture) == AgentArchitectureSwarm ||
+		(c.Options.Swarm != nil && c.Options.Swarm.Enabled)
+}
+
+func (c *Config) AgentArchitecture() AgentArchitecture {
+	if c.Options == nil {
+		return AgentArchitectureSwarm
+	}
+	return NormalizeAgentArchitecture(c.Options.AgentArchitecture)
+}
+
+func (c *Config) SwarmOptions() SwarmOptions {
+	if c.Options == nil || c.Options.Swarm == nil {
+		return SwarmOptions{Enabled: true}
+	}
+	result := *c.Options.Swarm
+	if c.AgentArchitecture() == AgentArchitectureSwarm {
+		result.Enabled = true
+	}
+	return result
+}
+
+func (c *Config) SetAgentArchitecture(mode AgentArchitecture) error {
+	if c.Options == nil {
+		c.Options = &Options{}
+	}
+	normalized := NormalizeAgentArchitecture(mode)
+	c.Options.AgentArchitecture = normalized
+	if err := c.SetConfigField("options.agent_architecture", normalized); err != nil {
+		return fmt.Errorf("failed to persist agent architecture: %w", err)
+	}
+	if c.Options.Swarm == nil {
+		c.Options.Swarm = &SwarmOptions{}
+	}
+	if normalized == AgentArchitectureSwarm {
+		c.Options.Swarm.Enabled = true
+		if err := c.SetConfigField("options.swarm.enabled", true); err != nil {
+			return fmt.Errorf("failed to persist swarm mode: %w", err)
+		}
+	} else {
+		c.Options.Swarm.Enabled = false
+		if err := c.SetConfigField("options.swarm.enabled", false); err != nil {
+			return fmt.Errorf("failed to persist swarm mode: %w", err)
+		}
+	}
+	return nil
 }
 
 func (c *Config) EnabledProviders() []ProviderConfig {
@@ -755,6 +847,9 @@ func filterSlice(data []string, mask []string, include bool) []string {
 
 func (c *Config) SetupAgents() {
 	allowedTools := resolveAllowedTools(allToolNames(), c.Options.DisabledTools)
+	if c.SwarmEnabled() && !slices.Contains(allowedTools, "swarm") {
+		allowedTools = append(allowedTools, "swarm")
+	}
 
 	agents := map[string]Agent{
 		AgentCoder: {

@@ -1,4 +1,4 @@
-// Package logo renders a Crush wordmark in a stylized way.
+// Package logo renders a Swarmy wordmark in a stylized way.
 package logo
 
 import (
@@ -8,7 +8,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/MakeNowJust/heredoc"
-	"github.com/charmbracelet/crush/internal/ui/styles"
+	"github.com/charmbracelet/swarmy/internal/ui/styles"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/exp/slice"
 )
@@ -19,23 +19,23 @@ type letterform func(bool) string
 
 const diag = `╱`
 
-// Opts are the options for rendering the Crush title art.
+// Opts are the options for rendering the Swarmy title art.
 type Opts struct {
 	FieldColor   color.Color // diagonal lines
 	TitleColorA  color.Color // left gradient ramp point
 	TitleColorB  color.Color // right gradient ramp point
-	CharmColor   color.Color // Charm™ text color
+	BrandColor   color.Color // Meta label text color
 	VersionColor color.Color // Version text color
 	Width        int         // width of the rendered logo, used for truncation
 }
 
-// Render renders the Crush logo. Set the argument to true to render the narrow
+// Render renders the Swarmy logo. Set the argument to true to render the narrow
 // version, intended for use in a sidebar.
 //
 // The compact argument determines whether it renders compact for the sidebar
 // or wider for the main pane.
 func Render(s *styles.Styles, version string, compact bool, o Opts) string {
-	const charm = " Charm™"
+	const metaLabel = " Swarmy"
 
 	fg := func(c color.Color, s string) string {
 		return lipgloss.NewStyle().Foreground(c).Render(s)
@@ -44,42 +44,40 @@ func Render(s *styles.Styles, version string, compact bool, o Opts) string {
 	// Title.
 	const spacing = 1
 	letterforms := []letterform{
-		letterC,
-		letterR,
-		letterU,
 		letterSStylized,
-		letterH,
+		letterW,
+		letterA,
+		letterR,
+		letterM,
+		letterY,
 	}
-	stretchIndex := -1 // -1 means no stretching.
-	if !compact {
-		stretchIndex = cachedRandN(len(letterforms))
-	}
+	stretchIndex := -1 // Keep the wordmark geometry stable across renders.
 
-	crush := renderWord(spacing, stretchIndex, letterforms...)
-	crushWidth := lipgloss.Width(crush)
+	swarmy := renderWord(spacing, stretchIndex, letterforms...)
+	titleWidth := lipgloss.Width(swarmy)
 	b := new(strings.Builder)
-	for r := range strings.SplitSeq(crush, "\n") {
+	for r := range strings.SplitSeq(swarmy, "\n") {
 		fmt.Fprintln(b, styles.ApplyForegroundGrad(s, r, o.TitleColorA, o.TitleColorB))
 	}
-	crush = b.String()
+	swarmy = b.String()
 
 	// Charm and version.
 	metaRowGap := 1
-	maxVersionWidth := crushWidth - lipgloss.Width(charm) - metaRowGap
+	maxVersionWidth := titleWidth - lipgloss.Width(metaLabel) - metaRowGap
 	version = ansi.Truncate(version, maxVersionWidth, "…") // truncate version if too long.
-	gap := max(0, crushWidth-lipgloss.Width(charm)-lipgloss.Width(version))
-	metaRow := fg(o.CharmColor, charm) + strings.Repeat(" ", gap) + fg(o.VersionColor, version)
+	gap := max(0, titleWidth-lipgloss.Width(metaLabel)-lipgloss.Width(version))
+	metaRow := fg(o.BrandColor, metaLabel) + strings.Repeat(" ", gap) + fg(o.VersionColor, version)
 
-	// Join the meta row and big Crush title.
-	crush = strings.TrimSpace(metaRow + "\n" + crush)
+	// Join the meta row and big Swarmy title.
+	swarmy = strings.TrimSpace(metaRow + "\n" + swarmy)
 
 	// Narrow version.
 	if compact {
-		field := fg(o.FieldColor, strings.Repeat(diag, crushWidth))
-		return strings.Join([]string{field, field, crush, field, ""}, "\n")
+		field := fg(o.FieldColor, strings.Repeat(diag, titleWidth))
+		return strings.Join([]string{field, field, swarmy, field, ""}, "\n")
 	}
 
-	fieldHeight := lipgloss.Height(crush)
+	fieldHeight := lipgloss.Height(swarmy)
 
 	// Left field.
 	const leftWidth = 6
@@ -90,7 +88,7 @@ func Render(s *styles.Styles, version string, compact bool, o Opts) string {
 	}
 
 	// Right field.
-	rightWidth := max(15, o.Width-crushWidth-leftWidth-2) // 2 for the gap.
+	rightWidth := max(15, o.Width-titleWidth-leftWidth-2) // 2 for the gap.
 	const stepDownAt = 0
 	rightField := new(strings.Builder)
 	for i := range fieldHeight {
@@ -103,7 +101,7 @@ func Render(s *styles.Styles, version string, compact bool, o Opts) string {
 
 	// Return the wide version.
 	const hGap = " "
-	logo := lipgloss.JoinHorizontal(lipgloss.Top, leftField.String(), hGap, crush, hGap, rightField.String())
+	logo := lipgloss.JoinHorizontal(lipgloss.Top, leftField.String(), hGap, swarmy, hGap, rightField.String())
 	if o.Width > 0 {
 		// Truncate the logo to the specified width.
 		lines := strings.Split(logo, "\n")
@@ -115,12 +113,12 @@ func Render(s *styles.Styles, version string, compact bool, o Opts) string {
 	return logo
 }
 
-// SmallRender renders a smaller version of the Crush logo, suitable for
+// SmallRender renders a smaller version of the Swarmy logo, suitable for
 // smaller windows or sidebar usage.
 func SmallRender(t *styles.Styles, width int) string {
-	title := t.Base.Foreground(t.Secondary).Render("Charm™")
-	title = fmt.Sprintf("%s %s", title, styles.ApplyBoldForegroundGrad(t, "Crush", t.Secondary, t.Primary))
-	remainingWidth := width - lipgloss.Width(title) - 1 // 1 for the space after "Crush"
+	title := t.Base.Foreground(t.Secondary).Render("Swarmy")
+	title = fmt.Sprintf("%s %s", title, styles.ApplyBoldForegroundGrad(t, "Swarmy", t.Secondary, t.Primary))
+	remainingWidth := width - lipgloss.Width(title) - 1 // 1 for the space after "Swarmy"
 	if remainingWidth > 0 {
 		lines := strings.Repeat("╱", remainingWidth)
 		title = fmt.Sprintf("%s %s", title, t.Base.Foreground(t.Primary).Render(lines))
@@ -312,6 +310,97 @@ func letterU(stretch bool) string {
 		}),
 		side,
 	)
+}
+
+// letterW renders the letter W in a stylized way.
+func letterW(stretch bool) string {
+	// Here's what we're making:
+	//
+	// █   █
+	// █ ▄ █
+	//  ▀ ▀
+
+	side := heredoc.Doc(`
+		█
+		█
+	`)
+	middleLeft := heredoc.Doc(`
+
+
+		▀
+	`)
+	center := heredoc.Doc(`
+
+		▄
+	`)
+	middleRight := heredoc.Doc(`
+
+
+		▀
+	`)
+	_ = stretch
+	return joinLetterform(side, middleLeft, center, middleRight, side)
+}
+
+// letterA renders the letter A in a stylized way.
+func letterA(stretch bool) string {
+	// Here's what we're making:
+	//
+	// ▄▀▀▀▄
+	// █▀  ▀█
+	// ▀    ▀
+	_ = stretch
+	return heredoc.Doc(`
+		▄▀▀▄
+		█▀▀█
+		▀  ▀
+	`)
+}
+
+// letterM renders the letter M in a stylized way.
+func letterM(stretch bool) string {
+	// Here's what we're making:
+	//
+	// █▀▄▀█
+	// █   █
+	// ▀   ▀
+
+	left := heredoc.Doc(`
+		█
+		█
+		▀
+	`)
+	peakLeft := heredoc.Doc(`
+		▀
+	`)
+	peakCenter := heredoc.Doc(`
+		▄
+	`)
+	peakRight := heredoc.Doc(`
+		▀
+	`)
+	right := heredoc.Doc(`
+		█
+		█
+		▀
+	`)
+	_ = stretch
+	return joinLetterform(left, peakLeft, peakCenter, peakRight, right)
+}
+
+// letterY renders the letter Y in a stylized way.
+func letterY(stretch bool) string {
+	// Here's what we're making:
+	//
+	// █   █
+	//  ▀▄▀
+	//  █
+	_ = stretch
+	return heredoc.Doc(`
+		█   █
+		 ▀▄▀ 
+		  ▀
+	`)
 }
 
 func joinLetterform(letters ...string) string {

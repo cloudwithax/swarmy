@@ -10,9 +10,9 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/util"
+	"github.com/charmbracelet/swarmy/internal/config"
+	"github.com/charmbracelet/swarmy/internal/ui/common"
+	"github.com/charmbracelet/swarmy/internal/ui/util"
 	uv "github.com/charmbracelet/ultraviolet"
 )
 
@@ -77,16 +77,18 @@ type Models struct {
 	isOnboarding bool
 
 	modelType ModelType
+	mode      config.AgentArchitecture
 	providers []catwalk.Provider
 
 	keyMap struct {
-		Tab      key.Binding
-		UpDown   key.Binding
-		Select   key.Binding
-		Edit     key.Binding
-		Next     key.Binding
-		Previous key.Binding
-		Close    key.Binding
+		Architecture key.Binding
+		Tab          key.Binding
+		UpDown       key.Binding
+		Select       key.Binding
+		Edit         key.Binding
+		Next         key.Binding
+		Previous     key.Binding
+		Close        key.Binding
 	}
 	list  *ModelsList
 	input textinput.Model
@@ -109,12 +111,18 @@ func NewModels(com *common.Common, isOnboarding bool) (*Models, error) {
 	m.list = NewModelsList(t)
 	m.list.Focus()
 	m.list.SetSelected(0)
+	m.mode = m.com.Config().AgentArchitecture()
 
 	m.input = textinput.New()
 	m.input.SetVirtualCursor(false)
 	m.input.Placeholder = onboardingModelInputPlaceholder
 	m.input.SetStyles(com.Styles.TextInput)
 	m.input.Focus()
+
+	m.keyMap.Architecture = key.NewBinding(
+		key.WithKeys("ctrl+a"),
+		key.WithHelp("ctrl+a", "toggle mode"),
+	)
 
 	m.keyMap.Tab = key.NewBinding(
 		key.WithKeys("tab", "shift+tab"),
@@ -167,6 +175,13 @@ func (m *Models) HandleMsg(msg tea.Msg) Action {
 		switch {
 		case key.Matches(msg, m.keyMap.Close):
 			return ActionClose{}
+		case key.Matches(msg, m.keyMap.Architecture):
+			if m.mode == config.AgentArchitectureSwarm {
+				m.mode = config.AgentArchitectureSolo
+			} else {
+				m.mode = config.AgentArchitectureSwarm
+			}
+			return ActionSelectArchitecture{Architecture: m.mode}
 		case key.Matches(msg, m.keyMap.Previous):
 			m.list.Focus()
 			if m.list.IsSelectedFirst() {
@@ -253,6 +268,29 @@ func (m *Models) modelTypeRadioView() string {
 		smallRadio, textStyle.Render(ModelTypeSmall.String()))
 }
 
+func (m *Models) architectureRadioView() string {
+	t := m.com.Styles
+	textStyle := t.HalfMuted
+	swarmRadioStyle := t.RadioOff
+	soloRadioStyle := t.RadioOff
+	if m.mode == config.AgentArchitectureSwarm {
+		swarmRadioStyle = t.RadioOn
+	} else {
+		soloRadioStyle = t.RadioOn
+	}
+
+	swarmRadio := swarmRadioStyle.Padding(0, 1).Render()
+	soloRadio := soloRadioStyle.Padding(0, 1).Render()
+
+	return fmt.Sprintf("%s%s  %s%s",
+		swarmRadio, textStyle.Render("Swarm"),
+		soloRadio, textStyle.Render("Solo"))
+}
+
+func (m *Models) titleInfoView() string {
+	return m.modelTypeRadioView() + "   " + m.architectureRadioView()
+}
+
 // Draw implements [Dialog].
 func (m *Models) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	t := m.com.Styles
@@ -269,8 +307,8 @@ func (m *Models) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	m.help.SetWidth(innerWidth)
 
 	rc := NewRenderContext(t, width)
-	rc.Title = "Switch Model"
-	rc.TitleInfo = m.modelTypeRadioView()
+	rc.Title = "Models + Mode"
+	rc.TitleInfo = m.titleInfoView()
 
 	if m.isOnboarding {
 		titleText := t.Dialog.PrimaryText.Render("To start, let's choose a provider and model.")
@@ -311,11 +349,13 @@ func (m *Models) ShortHelp() []key.Binding {
 	if m.isOnboarding {
 		return []key.Binding{
 			m.keyMap.UpDown,
+			m.keyMap.Architecture,
 			m.keyMap.Select,
 		}
 	}
 	h := []key.Binding{
 		m.keyMap.UpDown,
+		m.keyMap.Architecture,
 		m.keyMap.Tab,
 		m.keyMap.Select,
 	}

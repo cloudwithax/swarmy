@@ -10,9 +10,9 @@ import (
 
 	"charm.land/fantasy"
 	"charm.land/x/vcr"
-	"github.com/charmbracelet/crush/internal/agent/tools"
-	"github.com/charmbracelet/crush/internal/message"
-	"github.com/charmbracelet/crush/internal/session"
+	"github.com/charmbracelet/swarmy/internal/agent/tools"
+	"github.com/charmbracelet/swarmy/internal/message"
+	"github.com/charmbracelet/swarmy/internal/session"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -118,7 +118,7 @@ func TestCoderAgent(t *testing.T) {
 				require.NoError(t, err)
 
 				res, err := agent.Run(t.Context(), SessionAgentCall{
-					Prompt:          "update the main.go file by changing the print to say hello from crush",
+					Prompt:          "update the main.go file by changing the print to say hello from swarmy",
 					SessionID:       session.ID,
 					MaxOutputTokens: 10000,
 				})
@@ -161,7 +161,7 @@ func TestCoderAgent(t *testing.T) {
 				mainGoPath := filepath.Join(env.workingDir, "main.go")
 				content, err := os.ReadFile(mainGoPath)
 				require.NoError(t, err)
-				require.Contains(t, strings.ToLower(string(content)), "hello from crush")
+				require.Contains(t, strings.ToLower(string(content)), "hello from swarmy")
 			})
 			t.Run("bash tool", func(t *testing.T) {
 				agent, env := setupAgent(t, pair)
@@ -417,7 +417,7 @@ func TestCoderAgent(t *testing.T) {
 				require.NoError(t, err)
 
 				res, err := agent.Run(t.Context(), SessionAgentCall{
-					Prompt:          "use multiedit to change 'Hello, World!' to 'Hello, Crush!' and add a comment '// Greeting' above the fmt.Println line in main.go",
+					Prompt:          "use multiedit to change 'Hello, World!' to 'Hello, Swarmy!' and add a comment '// Greeting' above the fmt.Println line in main.go",
 					SessionID:       session.ID,
 					MaxOutputTokens: 10000,
 				})
@@ -452,7 +452,7 @@ func TestCoderAgent(t *testing.T) {
 				mainGoPath := filepath.Join(env.workingDir, "main.go")
 				content, err := os.ReadFile(mainGoPath)
 				require.NoError(t, err)
-				require.Contains(t, string(content), "Hello, Crush!", "Expected file to contain 'Hello, Crush!'")
+				require.Contains(t, string(content), "Hello, Swarmy!", "Expected file to contain 'Hello, Swarmy!'")
 			})
 			t.Run("sourcegraph tool", func(t *testing.T) {
 				agent, env := setupAgent(t, pair)

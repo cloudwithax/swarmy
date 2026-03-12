@@ -1,4 +1,4 @@
-module github.com/charmbracelet/crush
+module github.com/charmbracelet/swarmy
 
 go 1.26.1
 

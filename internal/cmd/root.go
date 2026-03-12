@@ -15,14 +15,14 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
-	"github.com/charmbracelet/crush/internal/app"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/db"
-	"github.com/charmbracelet/crush/internal/event"
-	"github.com/charmbracelet/crush/internal/projects"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	ui "github.com/charmbracelet/crush/internal/ui/model"
-	"github.com/charmbracelet/crush/internal/version"
+	"github.com/charmbracelet/swarmy/internal/app"
+	"github.com/charmbracelet/swarmy/internal/config"
+	"github.com/charmbracelet/swarmy/internal/db"
+	"github.com/charmbracelet/swarmy/internal/event"
+	"github.com/charmbracelet/swarmy/internal/projects"
+	"github.com/charmbracelet/swarmy/internal/ui/common"
+	ui "github.com/charmbracelet/swarmy/internal/ui/model"
+	"github.com/charmbracelet/swarmy/internal/version"
 	"github.com/charmbracelet/fang"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
@@ -33,7 +33,7 @@ import (
 
 func init() {
 	rootCmd.PersistentFlags().StringP("cwd", "c", "", "Current working directory")
-	rootCmd.PersistentFlags().StringP("data-dir", "D", "", "Custom crush data directory")
+	rootCmd.PersistentFlags().StringP("data-dir", "D", "", "Custom swarmy data directory")
 	rootCmd.PersistentFlags().BoolP("debug", "d", false, "Debug")
 	rootCmd.Flags().BoolP("help", "h", false, "Help")
 	rootCmd.Flags().BoolP("yolo", "y", false, "Automatically accept all permissions (dangerous mode)")
@@ -51,27 +51,27 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "crush",
+	Use:   "swarmy",
 	Short: "A terminal-first AI assistant for software development",
 	Long:  "A glamorous, terminal-first AI assistant for software development and adjacent tasks",
 	Example: `
 # Run in interactive mode
-crush
+swarmy
 
 # Run non-interactively
-crush run "Guess my 5 favorite Pokémon"
+swarmy run "Guess my 5 favorite Pokémon"
 
 # Run a non-interactively with pipes and redirection
-cat README.md | crush run "make this more glamorous" > GLAMOROUS_README.md
+cat README.md | swarmy run "make this more glamorous" > GLAMOROUS_README.md
 
 # Run with debug logging in a specific directory
-crush --debug --cwd /path/to/project
+swarmy --debug --cwd /path/to/project
 
 # Run in yolo mode (auto-accept all permissions; use with care)
-crush --yolo
+swarmy --yolo
 
 # Run with custom data directory
-crush --data-dir /path/to/custom/.crush
+swarmy --data-dir /path/to/custom/.swarmy
   `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		app, err := setupAppWithProgressBar(cmd)
@@ -99,7 +99,7 @@ crush --data-dir /path/to/custom/.crush
 		if _, err := program.Run(); err != nil {
 			event.Error(err)
 			slog.Error("TUI run error", "error", err)
-			return errors.New("Crush crashed. If metrics are enabled, we were notified about it. If you'd like to report it, please copy the stacktrace above and open an issue at https://github.com/charmbracelet/crush/issues/new?template=bug.yml") //nolint:staticcheck
+			return errors.New("Swarmy crashed. If metrics are enabled, we were notified about it. If you'd like to report it, please copy the stacktrace above and open an issue at https://github.com/charmbracelet/swarmy/issues/new?template=bug.yml") //nolint:staticcheck
 		}
 		return nil
 	},
@@ -229,7 +229,7 @@ func setupApp(cmd *cobra.Command) (*app.App, error) {
 }
 
 func shouldEnableMetrics(cfg *config.Config) bool {
-	if v, _ := strconv.ParseBool(os.Getenv("CRUSH_DISABLE_METRICS")); v {
+	if v, _ := strconv.ParseBool(os.Getenv("SWARMY_DISABLE_METRICS")); v {
 		return false
 	}
 	if v, _ := strconv.ParseBool(os.Getenv("DO_NOT_TRACK")); v {

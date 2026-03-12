@@ -17,20 +17,20 @@ import (
 
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/fantasy"
-	"github.com/charmbracelet/crush/internal/agent/hyper"
-	"github.com/charmbracelet/crush/internal/agent/notify"
-	"github.com/charmbracelet/crush/internal/agent/prompt"
-	"github.com/charmbracelet/crush/internal/agent/tools"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/filetracker"
-	"github.com/charmbracelet/crush/internal/history"
-	"github.com/charmbracelet/crush/internal/log"
-	"github.com/charmbracelet/crush/internal/lsp"
-	"github.com/charmbracelet/crush/internal/message"
-	"github.com/charmbracelet/crush/internal/oauth/copilot"
-	"github.com/charmbracelet/crush/internal/permission"
-	"github.com/charmbracelet/crush/internal/pubsub"
-	"github.com/charmbracelet/crush/internal/session"
+	"github.com/charmbracelet/swarmy/internal/agent/hyper"
+	"github.com/charmbracelet/swarmy/internal/agent/notify"
+	"github.com/charmbracelet/swarmy/internal/agent/prompt"
+	"github.com/charmbracelet/swarmy/internal/agent/tools"
+	"github.com/charmbracelet/swarmy/internal/config"
+	"github.com/charmbracelet/swarmy/internal/filetracker"
+	"github.com/charmbracelet/swarmy/internal/history"
+	"github.com/charmbracelet/swarmy/internal/log"
+	"github.com/charmbracelet/swarmy/internal/lsp"
+	"github.com/charmbracelet/swarmy/internal/message"
+	"github.com/charmbracelet/swarmy/internal/oauth/copilot"
+	"github.com/charmbracelet/swarmy/internal/permission"
+	"github.com/charmbracelet/swarmy/internal/pubsub"
+	"github.com/charmbracelet/swarmy/internal/session"
 	"golang.org/x/sync/errgroup"
 
 	"charm.land/fantasy/providers/anthropic"
@@ -383,23 +383,10 @@ func (c *coordinator) buildAgent(ctx context.Context, prompt *prompt.Prompt, age
 		return nil, err
 	}
 
-	largeProviderCfg, _ := c.cfg.Providers.Get(large.ModelCfg.Provider)
-	result := NewSessionAgent(SessionAgentOptions{
-		LargeModel:           large,
-		SmallModel:           small,
-		SystemPromptPrefix:   largeProviderCfg.SystemPromptPrefix,
-		SystemPrompt:         "",
-		IsSubAgent:           isSubAgent,
-		DisableAutoSummarize: c.cfg.Options.DisableAutoSummarize,
-		IsYolo:               c.permissions.SkipRequests(),
-		Sessions:             c.sessions,
-		Messages:             c.messages,
-		Tools:                nil,
-		Notify:               c.notify,
-	})
+	result := c.newSessionAgent(agent, large, small, isSubAgent)
 
 	c.readyWg.Go(func() error {
-		systemPrompt, err := prompt.Build(ctx, large.Model.Provider(), large.Model.Model(), *c.cfg)
+		systemPrompt, err := c.buildSystemPrompt(ctx, prompt, agent, large, isSubAgent)
 		if err != nil {
 			return err
 		}
@@ -419,8 +406,75 @@ func (c *coordinator) buildAgent(ctx context.Context, prompt *prompt.Prompt, age
 	return result, nil
 }
 
+func (c *coordinator) buildStaticAgent(ctx context.Context, prompt *prompt.Prompt, agent config.Agent, isSubAgent bool, includeSwarm bool) (SessionAgent, error) {
+	large, small, err := c.buildAgentModels(ctx, isSubAgent)
+	if err != nil {
+		return nil, err
+	}
+
+	result := c.newSessionAgent(agent, large, small, isSubAgent)
+	systemPrompt, err := c.buildSystemPrompt(ctx, prompt, agent, large, isSubAgent)
+	if err != nil {
+		return nil, err
+	}
+	result.SetSystemPrompt(systemPrompt)
+
+	tools, err := c.buildToolsForAgent(ctx, agent, includeSwarm)
+	if err != nil {
+		return nil, err
+	}
+	result.SetTools(tools)
+	return result, nil
+}
+
+func (c *coordinator) newSessionAgent(agent config.Agent, large, small Model, isSubAgent bool) SessionAgent {
+	largeProviderCfg, _ := c.cfg.Providers.Get(large.ModelCfg.Provider)
+	return NewSessionAgent(SessionAgentOptions{
+		LargeModel:           large,
+		SmallModel:           small,
+		SystemPromptPrefix:   largeProviderCfg.SystemPromptPrefix,
+		SystemPrompt:         "",
+		IsSubAgent:           isSubAgent,
+		DisableAutoSummarize: c.cfg.Options.DisableAutoSummarize,
+		IsYolo:               c.permissions.SkipRequests(),
+		Sessions:             c.sessions,
+		Messages:             c.messages,
+		Tools:                nil,
+		Notify:               c.notify,
+	})
+}
+
+func (c *coordinator) buildSystemPrompt(ctx context.Context, prompt *prompt.Prompt, agent config.Agent, large Model, isSubAgent bool) (string, error) {
+	systemPrompt, err := prompt.Build(ctx, large.Model.Provider(), large.Model.Model(), *c.cfg)
+	if err != nil {
+		return "", err
+	}
+	return c.augmentSystemPromptForArchitecture(systemPrompt, agent, isSubAgent), nil
+}
+
+func (c *coordinator) augmentSystemPromptForArchitecture(systemPrompt string, agent config.Agent, isSubAgent bool) string {
+	if !c.cfg.SwarmEnabled() || isSubAgent || agent.ID != config.AgentCoder {
+		return systemPrompt
+	}
+
+	return systemPrompt + "\n\n<swarm_architecture>\nWhen the user asks for code changes, prefer the swarm tool.\nThe swarm tool uses a planning pass to choose files, then assigns one worker agent per file.\nUse direct edit tools yourself only for small single-file follow-up fixes after swarm execution, or when swarm would clearly be unnecessary overhead.\n</swarm_architecture>"
+}
+
 func (c *coordinator) buildTools(ctx context.Context, agent config.Agent) ([]fantasy.AgentTool, error) {
+	includeSwarm := c.cfg.SwarmEnabled() && agent.ID == config.AgentCoder
+	return c.buildToolsForAgent(ctx, agent, includeSwarm)
+}
+
+func (c *coordinator) buildToolsForAgent(ctx context.Context, agent config.Agent, includeSwarm bool) ([]fantasy.AgentTool, error) {
 	var allTools []fantasy.AgentTool
+	if includeSwarm && slices.Contains(agent.AllowedTools, SwarmToolName) {
+		swarmTool, err := c.swarmTool(ctx)
+		if err != nil {
+			return nil, err
+		}
+		allTools = append(allTools, swarmTool)
+	}
+
 	if slices.Contains(agent.AllowedTools, AgentToolName) {
 		agentTool, err := c.agentTool(ctx)
 		if err != nil {

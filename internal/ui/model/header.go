@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/csync"
-	"github.com/charmbracelet/crush/internal/fsext"
-	"github.com/charmbracelet/crush/internal/lsp"
-	"github.com/charmbracelet/crush/internal/session"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/styles"
+	"github.com/charmbracelet/swarmy/internal/config"
+	"github.com/charmbracelet/swarmy/internal/csync"
+	"github.com/charmbracelet/swarmy/internal/fsext"
+	"github.com/charmbracelet/swarmy/internal/lsp"
+	"github.com/charmbracelet/swarmy/internal/session"
+	"github.com/charmbracelet/swarmy/internal/ui/common"
+	"github.com/charmbracelet/swarmy/internal/ui/styles"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 )
@@ -40,8 +40,8 @@ func newHeader(com *common.Common) *header {
 		com: com,
 	}
 	t := com.Styles
-	h.compactLogo = t.Header.Charm.Render("Charm™") + " " +
-		styles.ApplyBoldForegroundGrad(t, "CRUSH", t.Secondary, t.Primary) + " "
+	h.compactLogo = t.Header.Brand.Render("Swarmy") + " " +
+		styles.ApplyBoldForegroundGrad(t, "SWARMY", t.Secondary, t.Primary) + " "
 	return h
 }
 

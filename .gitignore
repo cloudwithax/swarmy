@@ -42,12 +42,12 @@ Thumbs.db
 .env
 .env.local
 
-**/.crush/**
+**/.swarmy/**
 
-/crush
+/swarmy
 /tmp/
 
 manpages/
-completions/crush.*sh
+completions/swarmy.*sh
 .prettierignore
 .task

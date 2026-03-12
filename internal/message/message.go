@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/charmbracelet/crush/internal/db"
-	"github.com/charmbracelet/crush/internal/pubsub"
+	"github.com/charmbracelet/swarmy/internal/db"
+	"github.com/charmbracelet/swarmy/internal/pubsub"
 	"github.com/google/uuid"
 )
 

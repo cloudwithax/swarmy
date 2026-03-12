@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"charm.land/log/v2"
-	"github.com/charmbracelet/crush/internal/event"
+	"github.com/charmbracelet/swarmy/internal/event"
 	"github.com/spf13/cobra"
 )
 
@@ -20,22 +20,22 @@ var runCmd = &cobra.Command{
 The prompt can be provided as arguments or piped from stdin.`,
 	Example: `
 # Run a simple prompt
-crush run "Guess my 5 favorite Pokémon"
+swarmy run "Guess my 5 favorite Pokémon"
 
 # Pipe input from stdin
-curl https://charm.land | crush run "Summarize this website"
+curl https://charm.land | swarmy run "Summarize this website"
 
 # Read from a file
-crush run "What is this code doing?" <<< prrr.go
+swarmy run "What is this code doing?" <<< prrr.go
 
 # Redirect output to a file
-crush run "Generate a hot README for this project" > MY_HOT_README.md
+swarmy run "Generate a hot README for this project" > MY_HOT_README.md
 
 # Run in quiet mode (hide the spinner)
-crush run --quiet "Generate a README for this project"
+swarmy run --quiet "Generate a README for this project"
 
 # Run in verbose mode (show logs)
-crush run --verbose "Generate a README for this project"
+swarmy run --verbose "Generate a README for this project"
   `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		quiet, _ := cmd.Flags().GetBool("quiet")
@@ -54,7 +54,7 @@ crush run --verbose "Generate a README for this project"
 		defer app.Shutdown()
 
 		if !app.Config().IsConfigured() {
-			return fmt.Errorf("no providers configured - please run 'crush' to set up a provider interactively")
+			return fmt.Errorf("no providers configured - please run 'swarmy' to set up a provider interactively")
 		}
 
 		if verbose {

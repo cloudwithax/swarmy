@@ -25,31 +25,31 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/agent/notify"
-	agenttools "github.com/charmbracelet/crush/internal/agent/tools"
-	"github.com/charmbracelet/crush/internal/agent/tools/mcp"
-	"github.com/charmbracelet/crush/internal/app"
-	"github.com/charmbracelet/crush/internal/commands"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/fsext"
-	"github.com/charmbracelet/crush/internal/history"
-	"github.com/charmbracelet/crush/internal/home"
-	"github.com/charmbracelet/crush/internal/message"
-	"github.com/charmbracelet/crush/internal/permission"
-	"github.com/charmbracelet/crush/internal/pubsub"
-	"github.com/charmbracelet/crush/internal/session"
-	"github.com/charmbracelet/crush/internal/ui/anim"
-	"github.com/charmbracelet/crush/internal/ui/attachments"
-	"github.com/charmbracelet/crush/internal/ui/chat"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/completions"
-	"github.com/charmbracelet/crush/internal/ui/dialog"
-	fimage "github.com/charmbracelet/crush/internal/ui/image"
-	"github.com/charmbracelet/crush/internal/ui/logo"
-	"github.com/charmbracelet/crush/internal/ui/notification"
-	"github.com/charmbracelet/crush/internal/ui/styles"
-	"github.com/charmbracelet/crush/internal/ui/util"
-	"github.com/charmbracelet/crush/internal/version"
+	"github.com/charmbracelet/swarmy/internal/agent/notify"
+	agenttools "github.com/charmbracelet/swarmy/internal/agent/tools"
+	"github.com/charmbracelet/swarmy/internal/agent/tools/mcp"
+	"github.com/charmbracelet/swarmy/internal/app"
+	"github.com/charmbracelet/swarmy/internal/commands"
+	"github.com/charmbracelet/swarmy/internal/config"
+	"github.com/charmbracelet/swarmy/internal/fsext"
+	"github.com/charmbracelet/swarmy/internal/history"
+	"github.com/charmbracelet/swarmy/internal/home"
+	"github.com/charmbracelet/swarmy/internal/message"
+	"github.com/charmbracelet/swarmy/internal/permission"
+	"github.com/charmbracelet/swarmy/internal/pubsub"
+	"github.com/charmbracelet/swarmy/internal/session"
+	"github.com/charmbracelet/swarmy/internal/ui/anim"
+	"github.com/charmbracelet/swarmy/internal/ui/attachments"
+	"github.com/charmbracelet/swarmy/internal/ui/chat"
+	"github.com/charmbracelet/swarmy/internal/ui/common"
+	"github.com/charmbracelet/swarmy/internal/ui/completions"
+	"github.com/charmbracelet/swarmy/internal/ui/dialog"
+	fimage "github.com/charmbracelet/swarmy/internal/ui/image"
+	"github.com/charmbracelet/swarmy/internal/ui/logo"
+	"github.com/charmbracelet/swarmy/internal/ui/notification"
+	"github.com/charmbracelet/swarmy/internal/ui/styles"
+	"github.com/charmbracelet/swarmy/internal/ui/util"
+	"github.com/charmbracelet/swarmy/internal/version"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/layout"
 	"github.com/charmbracelet/ultraviolet/screen"
@@ -588,7 +588,7 @@ func (m *UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		}
 		if cmd := m.sendNotification(notification.Notification{
-			Title:   "Crush is waiting...",
+			Title:   "Swarmy is waiting...",
 			Message: fmt.Sprintf("Permission required to execute \"%s\"", msg.Payload.ToolName),
 		}); cmd != nil {
 			cmds = append(cmds, cmd)
@@ -905,33 +905,69 @@ func (m *UI) loadNestedToolCalls(items []chat.MessageItem) {
 		tc := toolItem.ToolCall()
 		messageID := toolItem.MessageID()
 
-		// Get the agent tool session ID.
+		// Collect all session IDs to fetch messages from.
 		agentSessionID := m.com.App.Sessions.CreateAgentToolSessionID(messageID, tc.ID)
+		sessionIDs := []string{agentSessionID}
 
-		// Fetch nested messages.
-		nestedMsgs, err := m.com.App.Messages.List(context.Background(), agentSessionID)
-		if err != nil || len(nestedMsgs) == 0 {
+		// For swarm tools, also fetch worker sessions.
+		swarmItem, isSwarm := item.(*chat.SwarmToolMessageItem)
+		if isSwarm {
+			for i := 1; ; i++ {
+				workerSessionID := m.com.App.Sessions.CreateAgentToolSessionID(
+					messageID, fmt.Sprintf("%s-worker-%d", tc.ID, i),
+				)
+				msgs, err := m.com.App.Messages.List(context.Background(), workerSessionID)
+				if err != nil || len(msgs) == 0 {
+					break
+				}
+				workerPrefix := fmt.Sprintf("%s-worker-%d", tc.ID, i)
+				swarmItem.SetWorkerLabel(workerPrefix, strconv.Itoa(i))
+				sessionIDs = append(sessionIDs, workerSessionID)
+			}
+		}
+
+		// Fetch nested messages from all sessions.
+		var allNestedMsgs []message.Message
+		for _, sid := range sessionIDs {
+			nestedMsgs, err := m.com.App.Messages.List(context.Background(), sid)
+			if err != nil || len(nestedMsgs) == 0 {
+				continue
+			}
+			allNestedMsgs = append(allNestedMsgs, nestedMsgs...)
+		}
+
+		if len(allNestedMsgs) == 0 {
 			continue
 		}
 
 		// Build tool result map for nested messages.
-		nestedMsgPtrs := make([]*message.Message, len(nestedMsgs))
-		for i := range nestedMsgs {
-			nestedMsgPtrs[i] = &nestedMsgs[i]
+		nestedMsgPtrs := make([]*message.Message, len(allNestedMsgs))
+		for i := range allNestedMsgs {
+			nestedMsgPtrs[i] = &allNestedMsgs[i]
 		}
 		nestedToolResultMap := chat.BuildToolResultMap(nestedMsgPtrs)
 
 		// Extract nested tool items.
 		var nestedTools []chat.ToolMessageItem
-		for _, nestedMsg := range nestedMsgPtrs {
-			nestedItems := chat.ExtractMessageItems(m.com.Styles, nestedMsg, nestedToolResultMap)
-			for _, nestedItem := range nestedItems {
-				if nestedToolItem, ok := nestedItem.(chat.ToolMessageItem); ok {
-					// Mark nested tools as simple (compact) rendering.
-					if simplifiable, ok := nestedToolItem.(chat.Compactable); ok {
-						simplifiable.SetCompact(true)
+		for sIdx, sid := range sessionIDs {
+			nestedMsgs, err := m.com.App.Messages.List(context.Background(), sid)
+			if err != nil {
+				continue
+			}
+			for _, nestedMsg := range nestedMsgs {
+				nestedItems := chat.ExtractMessageItems(m.com.Styles, &nestedMsg, nestedToolResultMap)
+				for _, nestedItem := range nestedItems {
+					if nestedToolItem, ok := nestedItem.(chat.ToolMessageItem); ok {
+						if simplifiable, ok := nestedToolItem.(chat.Compactable); ok {
+							simplifiable.SetCompact(true)
+						}
+						// Tag worker tools for grouped rendering.
+						if isSwarm && sIdx > 0 {
+							workerPrefix := fmt.Sprintf("%s-worker-%d", tc.ID, sIdx)
+							swarmItem.TagToolWithWorker(nestedToolItem.ID(), workerPrefix)
+						}
+						nestedTools = append(nestedTools, nestedToolItem)
 					}
-					nestedTools = append(nestedTools, nestedToolItem)
 				}
 			}
 		}
@@ -1116,22 +1152,35 @@ func (m *UI) handleChildSessionMessage(event pubsub.Event[message.Message]) tea.
 		return nil
 	}
 
-	// Find the parent agent tool item.
+	// Find the parent tool item. For swarm workers the tool call ID has a
+	// "-worker-N" suffix that must be stripped to locate the parent swarm tool.
+	parentToolCallID := toolCallID
+	workerLabel := ""
+	if idx := strings.LastIndex(toolCallID, "-worker-"); idx != -1 {
+		parentToolCallID = toolCallID[:idx]
+		workerLabel = toolCallID[idx+len("-worker-"):]
+	}
+
 	var agentItem chat.NestedToolContainer
 	for i := 0; i < m.chat.Len(); i++ {
-		item := m.chat.MessageItem(toolCallID)
+		item := m.chat.MessageItem(parentToolCallID)
 		if item == nil {
 			continue
 		}
 		if agent, ok := item.(chat.NestedToolContainer); ok {
 			if toolMessageItem, ok := item.(chat.ToolMessageItem); ok {
-				if toolMessageItem.ToolCall().ID == toolCallID {
-					// Verify this agent belongs to the correct parent message.
-					// We can't directly check parentMessageID on the item, so we trust the session parsing.
+				if toolMessageItem.ToolCall().ID == parentToolCallID {
 					agentItem = agent
 					break
 				}
 			}
+		}
+	}
+
+	// If this is a swarm worker, register the worker label on the container.
+	if workerLabel != "" {
+		if sw, ok := agentItem.(*chat.SwarmToolMessageItem); ok {
+			sw.SetWorkerLabel(toolCallID, workerLabel)
 		}
 	}
 
@@ -1163,6 +1212,12 @@ func (m *UI) handleChildSessionMessage(event pubsub.Event[message.Message]) tea.
 					cmds = append(cmds, cmd)
 				}
 			}
+			// Tag the tool with its worker for grouped rendering.
+			if workerLabel != "" {
+				if sw, ok := agentItem.(*chat.SwarmToolMessageItem); ok {
+					sw.TagToolWithWorker(tc.ID, toolCallID)
+				}
+			}
 			nestedTools = append(nestedTools, nestedItem)
 		}
 	}
@@ -1181,7 +1236,7 @@ func (m *UI) handleChildSessionMessage(event pubsub.Event[message.Message]) tea.
 	agentItem.SetNestedTools(nestedTools)
 
 	// Update the chat so it updates the index map for animations to work as expected
-	m.chat.UpdateNestedToolIDs(toolCallID)
+	m.chat.UpdateNestedToolIDs(parentToolCallID)
 
 	if m.chat.Follow() {
 		if cmd := m.chat.ScrollToBottomAndAnimate(); cmd != nil {
@@ -1384,6 +1439,29 @@ func (m *UI) handleDialogMsg(msg tea.Msg) tea.Cmd {
 				cmds = append(cmds, util.ReportError(err))
 			}
 		}
+	case dialog.ActionSelectArchitecture:
+		if m.isAgentBusy() {
+			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait..."))
+			break
+		}
+
+		cfg := m.com.Config()
+		if cfg == nil {
+			cmds = append(cmds, util.ReportError(errors.New("configuration not found")))
+			break
+		}
+
+		cmds = append(cmds, func() tea.Msg {
+			if err := cfg.SetAgentArchitecture(msg.Architecture); err != nil {
+				return util.ReportError(err)
+			}
+			cfg.SetupAgents()
+			if err := m.com.App.InitCoderAgent(context.TODO()); err != nil {
+				return util.ReportError(err)
+			}
+
+			return util.NewInfoMsg("Mode switched to " + string(cfg.AgentArchitecture()))
+		})
 	case dialog.ActionSelectReasoningEffort:
 		if m.isAgentBusy() {
 			cmds = append(cmds, util.ReportWarn("Agent is busy, please wait..."))
@@ -1970,7 +2048,7 @@ func (m *UI) Draw(scr uv.Screen, area uv.Rectangle) *tea.Cursor {
 	}
 
 	// Debugging rendering (visually see when the tui rerenders)
-	if os.Getenv("CRUSH_UI_DEBUG") == "true" {
+	if os.Getenv("SWARMY_UI_DEBUG") == "true" {
 		debugView := lipgloss.NewStyle().Background(lipgloss.ANSIColor(rand.Intn(256))).Width(4).Height(2)
 		debug := uv.NewStyledString(debugView.String())
 		debug.Draw(scr, image.Rectangle{
@@ -2016,7 +2094,7 @@ func (m *UI) View() tea.View {
 	}
 	v.MouseMode = tea.MouseModeCellMotion
 	v.ReportFocus = m.caps.ReportFocusEvents
-	v.WindowTitle = "crush " + home.Short(m.com.Config().WorkingDir())
+	v.WindowTitle = "swarmy " + home.Short(m.com.Config().WorkingDir())
 
 	canvas := uv.NewScreenBuffer(m.width, m.height)
 	v.Cursor = m.Draw(canvas, canvas.Bounds())
@@ -2489,7 +2567,7 @@ func (m *UI) openEditor(value string) tea.Cmd {
 		return util.ReportError(err)
 	}
 	cmd, err := editor.Command(
-		"crush",
+		"swarmy",
 		tmpfile.Name(),
 		editor.AtPosition(
 			m.textarea.Line()+1,
@@ -3038,7 +3116,7 @@ func (m *UI) handleAgentNotification(n notify.Notification) tea.Cmd {
 	switch n.Type {
 	case notify.TypeAgentFinished:
 		return m.sendNotification(notification.Notification{
-			Title:   "Crush is waiting...",
+			Title:   "Swarmy is waiting...",
 			Message: fmt.Sprintf("Agent's turn completed in \"%s\"", n.SessionTitle),
 		})
 	default:
@@ -3388,13 +3466,13 @@ func (m *UI) copyChatHighlight() tea.Cmd {
 	)
 }
 
-// renderLogo renders the Crush logo with the given styles and dimensions.
+// renderLogo renders the Swarmy logo with the given styles and dimensions.
 func renderLogo(t *styles.Styles, compact bool, width int) string {
 	return logo.Render(t, version.Version, compact, logo.Opts{
 		FieldColor:   t.LogoFieldColor,
 		TitleColorA:  t.LogoTitleColorA,
 		TitleColorB:  t.LogoTitleColorB,
-		CharmColor:   t.LogoCharmColor,
+		BrandColor:   t.LogoBrandColor,
 		VersionColor: t.LogoVersionColor,
 		Width:        width,
 	})

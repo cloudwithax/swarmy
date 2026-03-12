@@ -6,10 +6,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/charmbracelet/crush/internal/agent/tools"
-	"github.com/charmbracelet/crush/internal/message"
-	"github.com/charmbracelet/crush/internal/session"
-	"github.com/charmbracelet/crush/internal/ui/styles"
+	"github.com/charmbracelet/swarmy/internal/agent/tools"
+	"github.com/charmbracelet/swarmy/internal/message"
+	"github.com/charmbracelet/swarmy/internal/session"
+	"github.com/charmbracelet/swarmy/internal/ui/styles"
 	"github.com/charmbracelet/x/ansi"
 )
 

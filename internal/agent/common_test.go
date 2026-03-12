@@ -15,17 +15,17 @@ import (
 	"charm.land/fantasy/providers/openaicompat"
 	"charm.land/fantasy/providers/openrouter"
 	"charm.land/x/vcr"
-	"github.com/charmbracelet/crush/internal/agent/prompt"
-	"github.com/charmbracelet/crush/internal/agent/tools"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/csync"
-	"github.com/charmbracelet/crush/internal/db"
-	"github.com/charmbracelet/crush/internal/filetracker"
-	"github.com/charmbracelet/crush/internal/history"
-	"github.com/charmbracelet/crush/internal/lsp"
-	"github.com/charmbracelet/crush/internal/message"
-	"github.com/charmbracelet/crush/internal/permission"
-	"github.com/charmbracelet/crush/internal/session"
+	"github.com/charmbracelet/swarmy/internal/agent/prompt"
+	"github.com/charmbracelet/swarmy/internal/agent/tools"
+	"github.com/charmbracelet/swarmy/internal/config"
+	"github.com/charmbracelet/swarmy/internal/csync"
+	"github.com/charmbracelet/swarmy/internal/db"
+	"github.com/charmbracelet/swarmy/internal/filetracker"
+	"github.com/charmbracelet/swarmy/internal/history"
+	"github.com/charmbracelet/swarmy/internal/lsp"
+	"github.com/charmbracelet/swarmy/internal/message"
+	"github.com/charmbracelet/swarmy/internal/permission"
+	"github.com/charmbracelet/swarmy/internal/session"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -53,7 +53,7 @@ type modelPair struct {
 func anthropicBuilder(model string) builderFunc {
 	return func(t *testing.T, r *vcr.Recorder) (fantasy.LanguageModel, error) {
 		provider, err := anthropic.New(
-			anthropic.WithAPIKey(os.Getenv("CRUSH_ANTHROPIC_API_KEY")),
+			anthropic.WithAPIKey(os.Getenv("SWARMY_ANTHROPIC_API_KEY")),
 			anthropic.WithHTTPClient(&http.Client{Transport: r}),
 		)
 		if err != nil {
@@ -66,7 +66,7 @@ func anthropicBuilder(model string) builderFunc {
 func openaiBuilder(model string) builderFunc {
 	return func(t *testing.T, r *vcr.Recorder) (fantasy.LanguageModel, error) {
 		provider, err := openai.New(
-			openai.WithAPIKey(os.Getenv("CRUSH_OPENAI_API_KEY")),
+			openai.WithAPIKey(os.Getenv("SWARMY_OPENAI_API_KEY")),
 			openai.WithHTTPClient(&http.Client{Transport: r}),
 		)
 		if err != nil {
@@ -79,7 +79,7 @@ func openaiBuilder(model string) builderFunc {
 func openRouterBuilder(model string) builderFunc {
 	return func(t *testing.T, r *vcr.Recorder) (fantasy.LanguageModel, error) {
 		provider, err := openrouter.New(
-			openrouter.WithAPIKey(os.Getenv("CRUSH_OPENROUTER_API_KEY")),
+			openrouter.WithAPIKey(os.Getenv("SWARMY_OPENROUTER_API_KEY")),
 			openrouter.WithHTTPClient(&http.Client{Transport: r}),
 		)
 		if err != nil {
@@ -93,7 +93,7 @@ func zAIBuilder(model string) builderFunc {
 	return func(t *testing.T, r *vcr.Recorder) (fantasy.LanguageModel, error) {
 		provider, err := openaicompat.New(
 			openaicompat.WithBaseURL("https://api.z.ai/api/coding/paas/v4"),
-			openaicompat.WithAPIKey(os.Getenv("CRUSH_ZAI_API_KEY")),
+			openaicompat.WithAPIKey(os.Getenv("SWARMY_ZAI_API_KEY")),
 			openaicompat.WithHTTPClient(&http.Client{Transport: r}),
 		)
 		if err != nil {
@@ -104,7 +104,7 @@ func zAIBuilder(model string) builderFunc {
 }
 
 func testEnv(t *testing.T) fakeEnv {
-	workingDir := filepath.Join("/tmp/crush-test/", t.Name())
+	workingDir := filepath.Join("/tmp/swarmy-test/", t.Name())
 	os.RemoveAll(workingDir)
 
 	err := os.MkdirAll(workingDir, 0o755)
@@ -184,7 +184,7 @@ func coderAgent(r *vcr.Recorder, env fakeEnv, large, small fantasy.LanguageModel
 	}
 
 	// NOTE(@andreynering): Set a fixed config to ensure cassettes match
-	// independently of user config on `$HOME/.config/crush/crush.json`.
+	// independently of user config on `$HOME/.config/swarmy/swarmy.json`.
 	cfg.Options.Attribution = &config.Attribution{
 		TrailerStyle:  "co-authored-by",
 		GeneratedWith: true,

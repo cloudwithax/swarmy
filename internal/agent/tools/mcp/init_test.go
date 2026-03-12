@@ -21,7 +21,7 @@ func TestMCPSession_CancelOnClose(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	client := mcp.NewClient(&mcp.Implementation{Name: "crush-test"}, nil)
+	client := mcp.NewClient(&mcp.Implementation{Name: "swarmy-test"}, nil)
 	clientSession, err := client.Connect(ctx, clientTransport, nil)
 	require.NoError(t, err)
 

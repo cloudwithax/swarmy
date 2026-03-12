@@ -1,19 +1,24 @@
 package cmd
 
 import (
+	"bufio"
 	"cmp"
 	"context"
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 
 	"charm.land/lipgloss/v2"
 	"github.com/atotto/clipboard"
-	hyperp "github.com/charmbracelet/crush/internal/agent/hyper"
-	"github.com/charmbracelet/crush/internal/config"
-	"github.com/charmbracelet/crush/internal/oauth"
-	"github.com/charmbracelet/crush/internal/oauth/copilot"
-	"github.com/charmbracelet/crush/internal/oauth/hyper"
+	hyperp "github.com/charmbracelet/swarmy/internal/agent/hyper"
+	"github.com/charmbracelet/swarmy/internal/config"
+	"github.com/charmbracelet/swarmy/internal/oauth"
+	anthropicauth "github.com/charmbracelet/swarmy/internal/oauth/anthropic"
+	"github.com/charmbracelet/swarmy/internal/oauth/codex"
+	"github.com/charmbracelet/swarmy/internal/oauth/copilot"
+	"github.com/charmbracelet/swarmy/internal/oauth/gitlab"
+	"github.com/charmbracelet/swarmy/internal/oauth/hyper"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 )
@@ -21,22 +26,35 @@ import (
 var loginCmd = &cobra.Command{
 	Aliases: []string{"auth"},
 	Use:     "login [platform]",
-	Short:   "Login Crush to a platform",
-	Long: `Login Crush to a specified platform.
+	Short:   "Login Swarmy to a platform",
+	Long: `Login Swarmy to a specified platform.
 The platform should be provided as an argument.
-Available platforms are: hyper, copilot.`,
+Available platforms are: hyper, copilot, anthropic, codex, gitlab.`,
 	Example: `
 # Authenticate with Charm Hyper
-crush login
+swarmy login
 
 # Authenticate with GitHub Copilot
-crush login copilot
+swarmy login copilot
+
+# Authenticate with Anthropic Claude Max
+swarmy login anthropic
+
+# Authenticate with OpenAI Codex
+swarmy login codex
+
+# Authenticate with GitLab
+swarmy login gitlab
   `,
 	ValidArgs: []cobra.Completion{
 		"hyper",
 		"copilot",
 		"github",
 		"github-copilot",
+		"anthropic",
+		"codex",
+		"openai",
+		"gitlab",
 	},
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -55,6 +73,12 @@ crush login copilot
 			return loginHyper(app.Config())
 		case "copilot", "github", "github-copilot":
 			return loginCopilot(app.Config())
+		case "anthropic":
+			return loginAnthropic(app.Config())
+		case "codex", "openai":
+			return loginCodex(app.Config())
+		case "gitlab":
+			return loginGitlab(app.Config())
 		default:
 			return fmt.Errorf("unknown platform: %s", args[0])
 		}
@@ -200,4 +224,136 @@ func getLoginContext() context.Context {
 
 func waitEnter() {
 	_, _ = fmt.Scanln()
+}
+
+func loginAnthropic(cfg *config.Config) error {
+	ctx := getLoginContext()
+
+	if cfg.HasConfigField("providers.anthropic.oauth") {
+		fmt.Println("You are already logged in to Anthropic.")
+		return nil
+	}
+
+	authResp, err := anthropicauth.Authorize()
+	if err != nil {
+		return fmt.Errorf("failed to generate authorization URL: %w", err)
+	}
+
+	fmt.Println("Open the following URL to authorize Swarmy with Anthropic Claude:")
+	fmt.Println()
+	fmt.Println(lipgloss.NewStyle().Hyperlink(authResp.URL, "id=anthropic").Render(authResp.URL))
+	fmt.Println()
+	fmt.Println("After authorizing, you'll see a code on the page. Paste it here:")
+	fmt.Print("> ")
+
+	reader := bufio.NewReader(os.Stdin)
+	combinedCode, err := reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("failed to read code: %w", err)
+	}
+	combinedCode = strings.TrimSpace(combinedCode)
+	if combinedCode == "" {
+		return fmt.Errorf("no code entered")
+	}
+
+	fmt.Println("Exchanging code for tokens...")
+	token, err := anthropicauth.Exchange(ctx, combinedCode, authResp.Verifier)
+	if err != nil {
+		return fmt.Errorf("token exchange failed: %w", err)
+	}
+
+	if err := cmp.Or(
+		cfg.SetConfigField("providers.anthropic.api_key", token.AccessToken),
+		cfg.SetConfigField("providers.anthropic.oauth", token),
+	); err != nil {
+		return err
+	}
+
+	fmt.Println()
+	fmt.Println("You're now authenticated with Anthropic Claude!")
+	return nil
+}
+
+func loginCodex(cfg *config.Config) error {
+	ctx := getLoginContext()
+
+	if cfg.HasConfigField("providers.openai.oauth") {
+		fmt.Println("You are already logged in to OpenAI Codex.")
+		return nil
+	}
+
+	fmt.Println("Requesting device code from OpenAI...")
+	dc, err := codex.RequestDeviceCode(ctx)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println()
+	fmt.Println("Open the following URL and enter the code to authorize Swarmy with OpenAI Codex:")
+	fmt.Println()
+	fmt.Println(lipgloss.NewStyle().Hyperlink(dc.LoginURL, "id=codex").Render(dc.LoginURL))
+	fmt.Println()
+	fmt.Println("Code:", lipgloss.NewStyle().Bold(true).Render(dc.UserCode))
+	fmt.Println()
+	fmt.Println("Waiting for authorization...")
+
+	token, err := codex.PollForToken(ctx, dc)
+	if err != nil {
+		return err
+	}
+
+	if err := cmp.Or(
+		cfg.SetConfigField("providers.openai.api_key", token.AccessToken),
+		cfg.SetConfigField("providers.openai.oauth", token),
+	); err != nil {
+		return err
+	}
+
+	fmt.Println()
+	fmt.Println("You're now authenticated with OpenAI Codex!")
+	return nil
+}
+
+func loginGitlab(cfg *config.Config) error {
+	ctx := getLoginContext()
+
+	if cfg.HasConfigField("providers.gitlab.oauth") {
+		fmt.Println("You are already logged in to GitLab.")
+		return nil
+	}
+
+	instanceURL := os.Getenv("GITLAB_INSTANCE_URL")
+
+	fmt.Println("Starting GitLab OAuth flow...")
+	ba, err := gitlab.StartBrowserAuth(ctx, instanceURL)
+	if err != nil {
+		return fmt.Errorf("failed to start GitLab OAuth: %w", err)
+	}
+
+	fmt.Println()
+	fmt.Println("Press enter to open this URL in your browser, or open it manually:")
+	fmt.Println()
+	fmt.Println(lipgloss.NewStyle().Hyperlink(ba.URL, "id=gitlab").Render(ba.URL))
+	fmt.Println()
+	waitEnter()
+	if err := browser.OpenURL(ba.URL); err != nil {
+		fmt.Println("Could not open the URL automatically. Please open it manually.")
+	}
+
+	fmt.Println("Waiting for authorization callback...")
+	token, err := ba.Wait(ctx)
+	if err != nil {
+		return err
+	}
+
+	if err := cmp.Or(
+		cfg.SetConfigField("providers.gitlab.api_key", token.AccessToken),
+		cfg.SetConfigField("providers.gitlab.oauth", token),
+	); err != nil {
+		return err
+	}
+
+	fmt.Println()
+	fmt.Println("You're now authenticated with GitLab!")
+	return nil
 }

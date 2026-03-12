@@ -3,13 +3,15 @@ package config
 import (
 	"io"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/crush/internal/csync"
-	"github.com/charmbracelet/crush/internal/env"
+	"github.com/charmbracelet/swarmy/internal/csync"
+	"github.com/charmbracelet/swarmy/internal/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -48,12 +50,40 @@ func TestConfig_setDefaults(t *testing.T) {
 	require.NotNil(t, cfg.Models)
 	require.NotNil(t, cfg.LSP)
 	require.NotNil(t, cfg.MCP)
-	require.Equal(t, filepath.Join("/tmp", ".crush"), cfg.Options.DataDirectory)
+	require.Equal(t, filepath.Join("/tmp", ".swarmy"), cfg.Options.DataDirectory)
 	require.Equal(t, "AGENTS.md", cfg.Options.InitializeAs)
+	require.Equal(t, AgentArchitectureSwarm, cfg.AgentArchitecture())
+	require.True(t, cfg.SwarmOptions().Enabled)
 	for _, path := range defaultContextPaths {
 		require.Contains(t, cfg.Options.ContextPaths, path)
 	}
 	require.Equal(t, "/tmp", cfg.workingDir)
+}
+
+func TestNormalizeAgentArchitecture(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, AgentArchitectureSwarm, NormalizeAgentArchitecture(""))
+	require.Equal(t, AgentArchitectureSolo, NormalizeAgentArchitecture("single"))
+	require.Equal(t, AgentArchitectureSolo, NormalizeAgentArchitecture(AgentArchitectureSolo))
+	require.Equal(t, AgentArchitectureSwarm, NormalizeAgentArchitecture(AgentArchitectureSwarm))
+	require.Equal(t, AgentArchitectureSwarm, NormalizeAgentArchitecture("unknown"))
+}
+
+func TestConfig_SetAgentArchitecture(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := &Config{dataConfigDir: filepath.Join(tempDir, "swarmy.json")}
+
+	require.NoError(t, cfg.SetAgentArchitecture(AgentArchitectureSwarm))
+	require.Equal(t, AgentArchitectureSwarm, cfg.AgentArchitecture())
+	require.True(t, cfg.SwarmOptions().Enabled)
+
+	require.NoError(t, cfg.SetAgentArchitecture(AgentArchitectureSolo))
+	require.Equal(t, AgentArchitectureSolo, cfg.AgentArchitecture())
+	require.False(t, cfg.Options.Swarm.Enabled)
+	require.False(t, cfg.SwarmEnabled())
 }
 
 func TestConfig_configureProviders(t *testing.T) {
@@ -169,11 +199,41 @@ func TestConfig_configureProvidersWithNewProvider(t *testing.T) {
 	require.Equal(t, "xyz", pc.APIKey)
 	// Make sure we set the ID correctly
 	require.Equal(t, "custom", pc.ID)
+	require.Equal(t, "OpenAI Compatible (api.someendpoint.com)", pc.Name)
 	require.Equal(t, "https://api.someendpoint.com/v2", pc.BaseURL)
 	require.Len(t, pc.Models, 1)
 
 	_, ok := cfg.Providers.Get("openai")
 	require.True(t, ok, "OpenAI provider should still be present")
+}
+
+func TestConfig_configureProvidersWithEnvInjectedOpenAIProviderUsesHostName(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "/v1/models", r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		_, err := io.WriteString(w, `{"data":[{"id":"local-model"}]}`)
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	cfg := &Config{}
+	cfg.setDefaults("/tmp", "")
+	configEnv := env.NewFromMap(map[string]string{
+		"OPENAI_BASE_URL": server.URL + "/v1",
+		"OPENAI_API_KEY":  "test-key",
+	})
+	resolver := NewEnvironmentVariableResolver(configEnv)
+
+	err := cfg.configureProviders(configEnv, resolver, nil)
+	require.NoError(t, err)
+
+	pc, ok := cfg.Providers.Get("openai-custom")
+	require.True(t, ok)
+	require.Equal(t, "OpenAI Compatible ("+server.Listener.Addr().String()+")", pc.Name)
+	require.Len(t, pc.Models, 1)
+	require.Equal(t, "local-model", pc.Models[0].ID)
 }
 
 func TestConfig_configureProvidersBedrockWithCredentials(t *testing.T) {
@@ -464,11 +524,41 @@ func TestConfig_setupAgentsWithNoDisabledTools(t *testing.T) {
 	cfg.SetupAgents()
 	coderAgent, ok := cfg.Agents[AgentCoder]
 	require.True(t, ok)
-	assert.Equal(t, allToolNames(), coderAgent.AllowedTools)
+	assert.Equal(t, append(allToolNames(), "swarm"), coderAgent.AllowedTools)
 
 	taskAgent, ok := cfg.Agents[AgentTask]
 	require.True(t, ok)
 	assert.Equal(t, []string{"glob", "grep", "ls", "sourcegraph", "view"}, taskAgent.AllowedTools)
+}
+
+func TestConfig_setupAgentsWithSwarmEnabled(t *testing.T) {
+	cfg := &Config{
+		Options: &Options{
+			AgentArchitecture: AgentArchitectureSwarm,
+		},
+	}
+
+	cfg.SetupAgents()
+	coderAgent, ok := cfg.Agents[AgentCoder]
+	require.True(t, ok)
+	assert.Contains(t, coderAgent.AllowedTools, "swarm")
+
+	taskAgent, ok := cfg.Agents[AgentTask]
+	require.True(t, ok)
+	assert.NotContains(t, taskAgent.AllowedTools, "swarm")
+}
+
+func TestConfig_setupAgentsWithSoloMode(t *testing.T) {
+	cfg := &Config{
+		Options: &Options{
+			AgentArchitecture: AgentArchitectureSolo,
+		},
+	}
+
+	cfg.SetupAgents()
+	coderAgent, ok := cfg.Agents[AgentCoder]
+	require.True(t, ok)
+	assert.NotContains(t, coderAgent.AllowedTools, "swarm")
 }
 
 func TestConfig_setupAgentsWithDisabledTools(t *testing.T) {
@@ -486,7 +576,7 @@ func TestConfig_setupAgentsWithDisabledTools(t *testing.T) {
 	coderAgent, ok := cfg.Agents[AgentCoder]
 	require.True(t, ok)
 
-	assert.Equal(t, []string{"agent", "bash", "job_output", "job_kill", "multiedit", "lsp_diagnostics", "lsp_references", "lsp_restart", "fetch", "agentic_fetch", "glob", "ls", "sourcegraph", "todos", "view", "write", "list_mcp_resources", "read_mcp_resource"}, coderAgent.AllowedTools)
+	assert.Equal(t, []string{"agent", "bash", "job_output", "job_kill", "multiedit", "lsp_diagnostics", "lsp_references", "lsp_restart", "fetch", "agentic_fetch", "glob", "ls", "sourcegraph", "todos", "view", "write", "list_mcp_resources", "read_mcp_resource", "swarm"}, coderAgent.AllowedTools)
 
 	taskAgent, ok := cfg.Agents[AgentTask]
 	require.True(t, ok)
@@ -509,7 +599,7 @@ func TestConfig_setupAgentsWithEveryReadOnlyToolDisabled(t *testing.T) {
 	cfg.SetupAgents()
 	coderAgent, ok := cfg.Agents[AgentCoder]
 	require.True(t, ok)
-	assert.Equal(t, []string{"agent", "bash", "job_output", "job_kill", "download", "edit", "multiedit", "lsp_diagnostics", "lsp_references", "lsp_restart", "fetch", "agentic_fetch", "todos", "write", "list_mcp_resources", "read_mcp_resource"}, coderAgent.AllowedTools)
+	assert.Equal(t, []string{"agent", "bash", "job_output", "job_kill", "download", "edit", "multiedit", "lsp_diagnostics", "lsp_references", "lsp_restart", "fetch", "agentic_fetch", "todos", "write", "list_mcp_resources", "read_mcp_resource", "swarm"}, coderAgent.AllowedTools)
 
 	taskAgent, ok := cfg.Agents[AgentTask]
 	require.True(t, ok)
@@ -1285,7 +1375,7 @@ func TestConfig_configureProvidersDisableDefaultProviders(t *testing.T) {
 
 func TestConfig_setDefaultsDisableDefaultProvidersEnvVar(t *testing.T) {
 	t.Run("sets option from environment variable", func(t *testing.T) {
-		t.Setenv("CRUSH_DISABLE_DEFAULT_PROVIDERS", "true")
+		t.Setenv("SWARMY_DISABLE_DEFAULT_PROVIDERS", "true")
 
 		cfg := &Config{}
 		cfg.setDefaults("/tmp", "")

@@ -12,7 +12,7 @@ import (
 	"charm.land/glamour/v2/ansi"
 	"charm.land/lipgloss/v2"
 	"github.com/alecthomas/chroma/v2"
-	"github.com/charmbracelet/crush/internal/ui/diffview"
+	"github.com/charmbracelet/swarmy/internal/ui/diffview"
 	"github.com/charmbracelet/x/exp/charmtone"
 )
 
@@ -73,7 +73,7 @@ type Styles struct {
 
 	// Header
 	Header struct {
-		Charm        lipgloss.Style // Style for "Charm™" label
+		Brand        lipgloss.Style // Style for the compact brand label
 		Diagonals    lipgloss.Style // Style for diagonal separators (╱)
 		Percentage   lipgloss.Style // Style for context percentage
 		Keystroke    lipgloss.Style // Style for keystroke hints (e.g., "ctrl+d")
@@ -162,7 +162,7 @@ type Styles struct {
 	LogoFieldColor   color.Color
 	LogoTitleColorA  color.Color
 	LogoTitleColorB  color.Color
-	LogoCharmColor   color.Color
+	LogoBrandColor   color.Color
 	LogoVersionColor color.Color
 
 	// Colors - semantic colors for tool rendering.
@@ -496,9 +496,9 @@ func (s *Styles) DialogHelpStyles() help.Styles {
 // DefaultStyles returns the default styles for the UI.
 func DefaultStyles() Styles {
 	var (
-		primary   = charmtone.Charple
-		secondary = charmtone.Dolly
-		tertiary  = charmtone.Bok
+		primary   = charmtone.Turtle
+		secondary = charmtone.Citron
+		tertiary  = charmtone.Tang
 		// accent    = charmtone.Zest
 
 		// Backgrounds
@@ -516,7 +516,7 @@ func DefaultStyles() Styles {
 
 		// Borders
 		border      = charmtone.Charcoal
-		borderFocus = charmtone.Charple
+		borderFocus = charmtone.Turtle
 
 		// Status
 		error   = charmtone.Sriracha
@@ -1085,7 +1085,7 @@ func DefaultStyles() Styles {
 	s.TagInfo = s.TagBase.Background(blueLight)
 
 	// Compact header styles
-	s.Header.Charm = base.Foreground(secondary)
+	s.Header.Brand = base.Foreground(secondary)
 	s.Header.Diagonals = base.Foreground(primary)
 	s.Header.Percentage = s.Muted
 	s.Header.Keystroke = s.Muted
@@ -1204,7 +1204,7 @@ func DefaultStyles() Styles {
 	s.LogoFieldColor = primary
 	s.LogoTitleColorA = secondary
 	s.LogoTitleColorB = primary
-	s.LogoCharmColor = secondary
+	s.LogoBrandColor = secondary
 	s.LogoVersionColor = primary
 
 	// Section

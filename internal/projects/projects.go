@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/crush/internal/config"
+	"github.com/charmbracelet/swarmy/internal/config"
 )
 
 const projectsFileName = "projects.json"

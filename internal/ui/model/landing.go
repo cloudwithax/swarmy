@@ -2,8 +2,8 @@ package model
 
 import (
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/crush/internal/agent"
-	"github.com/charmbracelet/crush/internal/ui/common"
+	"github.com/charmbracelet/swarmy/internal/agent"
+	"github.com/charmbracelet/swarmy/internal/ui/common"
 	"github.com/charmbracelet/ultraviolet/layout"
 )
 

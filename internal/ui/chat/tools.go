@@ -10,15 +10,15 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"charm.land/lipgloss/v2/tree"
-	"github.com/charmbracelet/crush/internal/agent"
-	"github.com/charmbracelet/crush/internal/agent/tools"
-	"github.com/charmbracelet/crush/internal/diff"
-	"github.com/charmbracelet/crush/internal/fsext"
-	"github.com/charmbracelet/crush/internal/message"
-	"github.com/charmbracelet/crush/internal/stringext"
-	"github.com/charmbracelet/crush/internal/ui/anim"
-	"github.com/charmbracelet/crush/internal/ui/common"
-	"github.com/charmbracelet/crush/internal/ui/styles"
+	"github.com/charmbracelet/swarmy/internal/agent"
+	"github.com/charmbracelet/swarmy/internal/agent/tools"
+	"github.com/charmbracelet/swarmy/internal/diff"
+	"github.com/charmbracelet/swarmy/internal/fsext"
+	"github.com/charmbracelet/swarmy/internal/message"
+	"github.com/charmbracelet/swarmy/internal/stringext"
+	"github.com/charmbracelet/swarmy/internal/ui/anim"
+	"github.com/charmbracelet/swarmy/internal/ui/common"
+	"github.com/charmbracelet/swarmy/internal/ui/styles"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -242,6 +242,8 @@ func NewToolMessageItem(
 		item = NewDiagnosticsToolMessageItem(sty, toolCall, result, canceled)
 	case agent.AgentToolName:
 		item = NewAgentToolMessageItem(sty, toolCall, result, canceled)
+	case agent.SwarmToolName:
+		item = NewSwarmToolMessageItem(sty, toolCall, result, canceled)
 	case tools.AgenticFetchToolName:
 		item = NewAgenticFetchToolMessageItem(sty, toolCall, result, canceled)
 	case tools.WebFetchToolName:
@@ -997,6 +999,11 @@ func (t *baseToolMessageItem) formatParametersForCopy() string {
 		if json.Unmarshal([]byte(t.toolCall.Input), &params) == nil {
 			return fmt.Sprintf("**Task:**\n%s", params.Prompt)
 		}
+	case agent.SwarmToolName:
+		var params agent.SwarmParams
+		if json.Unmarshal([]byte(t.toolCall.Input), &params) == nil {
+			return fmt.Sprintf("**Task:**\n%s", params.Prompt)
+		}
 	}
 
 	var params map[string]any
@@ -1046,6 +1053,8 @@ func (t *baseToolMessageItem) formatResultForCopy() string {
 	case tools.WebFetchToolName:
 		return t.formatWebFetchResultForCopy()
 	case agent.AgentToolName:
+		return t.formatAgentResultForCopy()
+	case agent.SwarmToolName:
 		return t.formatAgentResultForCopy()
 	case tools.DownloadToolName, tools.GrepToolName, tools.GlobToolName, tools.LSToolName, tools.SourcegraphToolName, tools.DiagnosticsToolName, tools.TodosToolName:
 		return fmt.Sprintf("```\n%s\n```", t.result.Content)
@@ -1365,6 +1374,8 @@ func prettifyToolName(name string) string {
 	switch name {
 	case agent.AgentToolName:
 		return "Agent"
+	case agent.SwarmToolName:
+		return "Swarm"
 	case tools.BashToolName:
 		return "Bash"
 	case tools.JobOutputToolName:

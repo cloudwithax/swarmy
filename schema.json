@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/charmbracelet/crush/internal/config/config",
+  "$id": "https://github.com/charmbracelet/swarmy/internal/config/config",
   "$ref": "#/$defs/Config",
   "$defs": {
     "Attribution": {
@@ -22,7 +22,7 @@
         },
         "generated_with": {
           "type": "boolean",
-          "description": "Add Generated with Crush line to commit messages and issues and PRs",
+          "description": "Add Generated with Swarmy line to commit messages and issues and PRs",
           "default": true
         }
       },
@@ -367,7 +367,7 @@
           "items": {
             "type": "string",
             "examples": [
-              "~/.config/crush/skills",
+              "~/.config/swarmy/skills",
               "./skills"
             ]
           },
@@ -396,9 +396,9 @@
         "data_directory": {
           "type": "string",
           "description": "Directory for storing application data (relative to working directory)",
-          "default": ".crush",
+          "default": ".swarmy",
           "examples": [
-            ".crush"
+            ".swarmy"
           ]
         },
         "disabled_tools": {
