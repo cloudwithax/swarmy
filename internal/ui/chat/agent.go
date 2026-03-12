@@ -7,10 +7,10 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"charm.land/lipgloss/v2/tree"
-	"github.com/charmbracelet/swarmy/internal/agent"
-	"github.com/charmbracelet/swarmy/internal/message"
-	"github.com/charmbracelet/swarmy/internal/ui/anim"
-	"github.com/charmbracelet/swarmy/internal/ui/styles"
+	"github.com/cloudwithax/swarmy/internal/agent"
+	"github.com/cloudwithax/swarmy/internal/message"
+	"github.com/cloudwithax/swarmy/internal/ui/anim"
+	"github.com/cloudwithax/swarmy/internal/ui/styles"
 )
 
 // -----------------------------------------------------------------------------

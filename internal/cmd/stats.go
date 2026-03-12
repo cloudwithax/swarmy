@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/config"
-	"github.com/charmbracelet/swarmy/internal/db"
-	"github.com/charmbracelet/swarmy/internal/event"
+	"github.com/cloudwithax/swarmy/internal/config"
+	"github.com/cloudwithax/swarmy/internal/db"
+	"github.com/cloudwithax/swarmy/internal/event"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 )

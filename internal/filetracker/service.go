@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/db"
+	"github.com/cloudwithax/swarmy/internal/db"
 )
 
 // Service defines the interface for tracking file reads in sessions.

@@ -21,13 +21,13 @@ import (
 	"time"
 
 	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/swarmy/internal/agent/hyper"
-	"github.com/charmbracelet/swarmy/internal/csync"
-	"github.com/charmbracelet/swarmy/internal/env"
-	"github.com/charmbracelet/swarmy/internal/fsext"
-	"github.com/charmbracelet/swarmy/internal/home"
-	"github.com/charmbracelet/swarmy/internal/log"
 	powernapConfig "github.com/charmbracelet/x/powernap/pkg/config"
+	"github.com/cloudwithax/swarmy/internal/agent/hyper"
+	"github.com/cloudwithax/swarmy/internal/csync"
+	"github.com/cloudwithax/swarmy/internal/env"
+	"github.com/cloudwithax/swarmy/internal/fsext"
+	"github.com/cloudwithax/swarmy/internal/home"
+	"github.com/cloudwithax/swarmy/internal/log"
 	"github.com/qjebbs/go-jsons"
 )
 

@@ -11,9 +11,9 @@ import (
 
 	"charm.land/fantasy"
 
-	"github.com/charmbracelet/swarmy/internal/agent/prompt"
-	"github.com/charmbracelet/swarmy/internal/agent/tools"
-	"github.com/charmbracelet/swarmy/internal/permission"
+	"github.com/cloudwithax/swarmy/internal/agent/prompt"
+	"github.com/cloudwithax/swarmy/internal/agent/tools"
+	"github.com/cloudwithax/swarmy/internal/permission"
 )
 
 //go:embed templates/agentic_fetch.md

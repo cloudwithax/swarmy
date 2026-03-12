@@ -3,7 +3,7 @@ package notification_test
 import (
 	"testing"
 
-	"github.com/charmbracelet/swarmy/internal/ui/notification"
+	"github.com/cloudwithax/swarmy/internal/ui/notification"
 	"github.com/stretchr/testify/require"
 )
 

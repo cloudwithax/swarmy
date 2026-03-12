@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/agent/hyper"
-	"github.com/charmbracelet/swarmy/internal/event"
-	"github.com/charmbracelet/swarmy/internal/oauth"
+	"github.com/cloudwithax/swarmy/internal/agent/hyper"
+	"github.com/cloudwithax/swarmy/internal/event"
+	"github.com/cloudwithax/swarmy/internal/oauth"
 )
 
 // DeviceAuthResponse contains the response from the device authorization endpoint.

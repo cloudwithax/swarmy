@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/csync"
-	"github.com/charmbracelet/swarmy/internal/lsp"
-	"github.com/charmbracelet/swarmy/internal/pubsub"
+	"github.com/cloudwithax/swarmy/internal/csync"
+	"github.com/cloudwithax/swarmy/internal/lsp"
+	"github.com/cloudwithax/swarmy/internal/pubsub"
 )
 
 // LSPEventType represents the type of LSP event

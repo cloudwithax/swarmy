@@ -6,9 +6,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/swarmy/internal/ui/common"
-	"github.com/charmbracelet/swarmy/internal/ui/styles"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/cloudwithax/swarmy/internal/ui/common"
+	"github.com/cloudwithax/swarmy/internal/ui/styles"
 )
 
 // InputCursor adjusts the cursor position for an input field within a dialog.

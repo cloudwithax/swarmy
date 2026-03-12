@@ -11,8 +11,8 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/charlievieth/fastwalk"
-	"github.com/charmbracelet/swarmy/internal/csync"
-	"github.com/charmbracelet/swarmy/internal/home"
+	"github.com/cloudwithax/swarmy/internal/csync"
+	"github.com/cloudwithax/swarmy/internal/home"
 )
 
 type FileInfo struct {

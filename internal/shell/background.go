@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/csync"
+	"github.com/cloudwithax/swarmy/internal/csync"
 )
 
 const (

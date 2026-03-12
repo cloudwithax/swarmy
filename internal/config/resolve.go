@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/env"
-	"github.com/charmbracelet/swarmy/internal/shell"
+	"github.com/cloudwithax/swarmy/internal/env"
+	"github.com/cloudwithax/swarmy/internal/shell"
 )
 
 type VariableResolver interface {

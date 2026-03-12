@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/config"
-	"github.com/charmbracelet/swarmy/internal/env"
+	"github.com/cloudwithax/swarmy/internal/config"
+	"github.com/cloudwithax/swarmy/internal/env"
 	"github.com/stretchr/testify/require"
 )
 

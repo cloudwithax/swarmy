@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/swarmy/internal/message"
-	"github.com/charmbracelet/swarmy/internal/stringext"
-	"github.com/charmbracelet/swarmy/internal/ui/styles"
+	"github.com/cloudwithax/swarmy/internal/message"
+	"github.com/cloudwithax/swarmy/internal/stringext"
+	"github.com/cloudwithax/swarmy/internal/ui/styles"
 )
 
 // MCPToolMessageItem is a message item that represents a bash tool call.

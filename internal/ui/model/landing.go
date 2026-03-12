@@ -2,9 +2,9 @@ package model
 
 import (
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/swarmy/internal/agent"
-	"github.com/charmbracelet/swarmy/internal/ui/common"
 	"github.com/charmbracelet/ultraviolet/layout"
+	"github.com/cloudwithax/swarmy/internal/agent"
+	"github.com/cloudwithax/swarmy/internal/ui/common"
 )
 
 // selectedLargeModel returns the currently selected large language model from

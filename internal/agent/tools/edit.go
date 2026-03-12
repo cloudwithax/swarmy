@@ -11,14 +11,14 @@ import (
 	"time"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/swarmy/internal/diff"
-	"github.com/charmbracelet/swarmy/internal/filepathext"
-	"github.com/charmbracelet/swarmy/internal/filetracker"
-	"github.com/charmbracelet/swarmy/internal/fsext"
-	"github.com/charmbracelet/swarmy/internal/history"
+	"github.com/cloudwithax/swarmy/internal/diff"
+	"github.com/cloudwithax/swarmy/internal/filepathext"
+	"github.com/cloudwithax/swarmy/internal/filetracker"
+	"github.com/cloudwithax/swarmy/internal/fsext"
+	"github.com/cloudwithax/swarmy/internal/history"
 
-	"github.com/charmbracelet/swarmy/internal/lsp"
-	"github.com/charmbracelet/swarmy/internal/permission"
+	"github.com/cloudwithax/swarmy/internal/lsp"
+	"github.com/cloudwithax/swarmy/internal/permission"
 )
 
 type EditParams struct {

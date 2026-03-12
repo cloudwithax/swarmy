@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/swarmy/internal/ui/styles"
+	"github.com/cloudwithax/swarmy/internal/ui/styles"
 )
 
 // ButtonOpts defines the configuration for a single button

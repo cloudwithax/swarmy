@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/swarmy/internal/agent"
-	"github.com/charmbracelet/swarmy/internal/message"
-	"github.com/charmbracelet/swarmy/internal/permission"
-	"github.com/charmbracelet/swarmy/internal/pubsub"
-	"github.com/charmbracelet/swarmy/internal/session"
+	"github.com/cloudwithax/swarmy/internal/agent"
+	"github.com/cloudwithax/swarmy/internal/message"
+	"github.com/cloudwithax/swarmy/internal/permission"
+	"github.com/cloudwithax/swarmy/internal/pubsub"
+	"github.com/cloudwithax/swarmy/internal/session"
 	"github.com/google/uuid"
 )
 

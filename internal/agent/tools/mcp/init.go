@@ -16,12 +16,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/config"
-	"github.com/charmbracelet/swarmy/internal/csync"
-	"github.com/charmbracelet/swarmy/internal/home"
-	"github.com/charmbracelet/swarmy/internal/permission"
-	"github.com/charmbracelet/swarmy/internal/pubsub"
-	"github.com/charmbracelet/swarmy/internal/version"
+	"github.com/cloudwithax/swarmy/internal/config"
+	"github.com/cloudwithax/swarmy/internal/csync"
+	"github.com/cloudwithax/swarmy/internal/home"
+	"github.com/cloudwithax/swarmy/internal/permission"
+	"github.com/cloudwithax/swarmy/internal/pubsub"
+	"github.com/cloudwithax/swarmy/internal/version"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

@@ -10,8 +10,8 @@ import (
 	"sync"
 
 	"github.com/charlievieth/fastwalk"
-	"github.com/charmbracelet/swarmy/internal/csync"
-	"github.com/charmbracelet/swarmy/internal/home"
+	"github.com/cloudwithax/swarmy/internal/csync"
+	"github.com/cloudwithax/swarmy/internal/home"
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 )
 
@@ -32,7 +32,7 @@ var fastIgnoreDirs = map[string]bool{
 	".Trash":          true,
 	".Spotlight-V100": true,
 	".fseventsd":      true,
-	".swarmy":          true,
+	".swarmy":         true,
 	"OrbStack":        true,
 	".local":          true,
 	".share":          true,

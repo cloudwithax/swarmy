@@ -8,7 +8,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/alecthomas/chroma/v2"
-	"github.com/charmbracelet/swarmy/internal/ansiext"
+	"github.com/cloudwithax/swarmy/internal/ansiext"
 )
 
 var _ chroma.Formatter = chromaFormatter{}

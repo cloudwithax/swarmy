@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/charmbracelet/swarmy/internal/fsext"
+	"github.com/cloudwithax/swarmy/internal/fsext"
 )
 
 const (

@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/charmbracelet/swarmy/internal/history"
-	"github.com/charmbracelet/swarmy/internal/permission"
-	"github.com/charmbracelet/swarmy/internal/pubsub"
+	"github.com/cloudwithax/swarmy/internal/history"
+	"github.com/cloudwithax/swarmy/internal/permission"
+	"github.com/cloudwithax/swarmy/internal/pubsub"
 	"github.com/stretchr/testify/require"
 )
 

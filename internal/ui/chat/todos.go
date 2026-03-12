@@ -6,11 +6,11 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/charmbracelet/swarmy/internal/agent/tools"
-	"github.com/charmbracelet/swarmy/internal/message"
-	"github.com/charmbracelet/swarmy/internal/session"
-	"github.com/charmbracelet/swarmy/internal/ui/styles"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/cloudwithax/swarmy/internal/agent/tools"
+	"github.com/cloudwithax/swarmy/internal/message"
+	"github.com/cloudwithax/swarmy/internal/session"
+	"github.com/cloudwithax/swarmy/internal/ui/styles"
 )
 
 // -----------------------------------------------------------------------------

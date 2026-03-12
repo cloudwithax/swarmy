@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/version"
+	"github.com/cloudwithax/swarmy/internal/version"
 	"github.com/posthog/posthog-go"
 )
 

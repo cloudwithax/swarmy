@@ -11,10 +11,10 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/config"
-	"github.com/charmbracelet/swarmy/internal/home"
-	"github.com/charmbracelet/swarmy/internal/shell"
-	"github.com/charmbracelet/swarmy/internal/skills"
+	"github.com/cloudwithax/swarmy/internal/config"
+	"github.com/cloudwithax/swarmy/internal/home"
+	"github.com/cloudwithax/swarmy/internal/shell"
+	"github.com/cloudwithax/swarmy/internal/skills"
 )
 
 // Prompt represents a template-based prompt generator.

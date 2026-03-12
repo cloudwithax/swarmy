@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/alecthomas/chroma/v2/styles"
-	"github.com/charmbracelet/swarmy/internal/ui/diffview"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/exp/golden"
+	"github.com/cloudwithax/swarmy/internal/ui/diffview"
 )
 
 //go:embed testdata/TestDefault.before

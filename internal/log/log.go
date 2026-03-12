@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/event"
+	"github.com/cloudwithax/swarmy/internal/event"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 

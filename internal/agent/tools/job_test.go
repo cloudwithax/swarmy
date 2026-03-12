@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/shell"
+	"github.com/cloudwithax/swarmy/internal/shell"
 	"github.com/stretchr/testify/require"
 )
 

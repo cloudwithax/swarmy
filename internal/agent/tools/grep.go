@@ -19,9 +19,9 @@ import (
 	"time"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/swarmy/internal/config"
-	"github.com/charmbracelet/swarmy/internal/csync"
-	"github.com/charmbracelet/swarmy/internal/fsext"
+	"github.com/cloudwithax/swarmy/internal/config"
+	"github.com/cloudwithax/swarmy/internal/csync"
+	"github.com/cloudwithax/swarmy/internal/fsext"
 )
 
 // regexCache provides thread-safe caching of compiled regex patterns

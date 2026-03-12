@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/charmbracelet/swarmy/internal/projects"
+	"github.com/cloudwithax/swarmy/internal/projects"
 	"github.com/stretchr/testify/require"
 )
 

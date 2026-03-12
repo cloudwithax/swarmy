@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/swarmy/internal/event"
+	"github.com/cloudwithax/swarmy/internal/event"
 )
 
 func (a *sessionAgent) eventPromptSent(sessionID string) {

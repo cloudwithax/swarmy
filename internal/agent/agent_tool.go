@@ -7,9 +7,9 @@ import (
 
 	"charm.land/fantasy"
 
-	"github.com/charmbracelet/swarmy/internal/agent/prompt"
-	"github.com/charmbracelet/swarmy/internal/agent/tools"
-	"github.com/charmbracelet/swarmy/internal/config"
+	"github.com/cloudwithax/swarmy/internal/agent/prompt"
+	"github.com/cloudwithax/swarmy/internal/agent/tools"
+	"github.com/cloudwithax/swarmy/internal/config"
 )
 
 //go:embed templates/agent_tool.md

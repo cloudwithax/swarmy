@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/swarmy/internal/config"
-	"github.com/charmbracelet/swarmy/internal/fsext"
-	"github.com/charmbracelet/swarmy/internal/permission"
-	"github.com/charmbracelet/swarmy/internal/shell"
+	"github.com/cloudwithax/swarmy/internal/config"
+	"github.com/cloudwithax/swarmy/internal/fsext"
+	"github.com/cloudwithax/swarmy/internal/permission"
+	"github.com/cloudwithax/swarmy/internal/shell"
 )
 
 type BashParams struct {

@@ -5,10 +5,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/swarmy/internal/message"
-	"github.com/charmbracelet/swarmy/internal/ui/attachments"
-	"github.com/charmbracelet/swarmy/internal/ui/common"
-	"github.com/charmbracelet/swarmy/internal/ui/styles"
+	"github.com/cloudwithax/swarmy/internal/message"
+	"github.com/cloudwithax/swarmy/internal/ui/attachments"
+	"github.com/cloudwithax/swarmy/internal/ui/common"
+	"github.com/cloudwithax/swarmy/internal/ui/styles"
 )
 
 // UserMessageItem represents a user message in the chat UI.

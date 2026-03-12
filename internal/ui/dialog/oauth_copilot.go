@@ -7,9 +7,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/swarmy/internal/config"
-	"github.com/charmbracelet/swarmy/internal/oauth/copilot"
-	"github.com/charmbracelet/swarmy/internal/ui/common"
+	"github.com/cloudwithax/swarmy/internal/config"
+	"github.com/cloudwithax/swarmy/internal/oauth/copilot"
+	"github.com/cloudwithax/swarmy/internal/ui/common"
 )
 
 func NewOAuthCopilot(

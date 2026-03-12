@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/swarmy/internal/app"
-	"github.com/charmbracelet/swarmy/internal/lsp"
-	"github.com/charmbracelet/swarmy/internal/ui/common"
-	"github.com/charmbracelet/swarmy/internal/ui/styles"
 	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
+	"github.com/cloudwithax/swarmy/internal/app"
+	"github.com/cloudwithax/swarmy/internal/lsp"
+	"github.com/cloudwithax/swarmy/internal/ui/common"
+	"github.com/cloudwithax/swarmy/internal/ui/styles"
 )
 
 // LSPInfo wraps LSP client information with diagnostic counts by severity.

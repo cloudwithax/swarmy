@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/swarmy/internal/filepathext"
-	"github.com/charmbracelet/swarmy/internal/permission"
+	"github.com/cloudwithax/swarmy/internal/filepathext"
+	"github.com/cloudwithax/swarmy/internal/permission"
 )
 
 type DownloadParams struct {

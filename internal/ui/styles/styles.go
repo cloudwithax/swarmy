@@ -12,8 +12,8 @@ import (
 	"charm.land/glamour/v2/ansi"
 	"charm.land/lipgloss/v2"
 	"github.com/alecthomas/chroma/v2"
-	"github.com/charmbracelet/swarmy/internal/ui/diffview"
 	"github.com/charmbracelet/x/exp/charmtone"
+	"github.com/cloudwithax/swarmy/internal/ui/diffview"
 )
 
 const (

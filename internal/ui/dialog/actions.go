@@ -8,14 +8,14 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/swarmy/internal/commands"
-	"github.com/charmbracelet/swarmy/internal/config"
-	"github.com/charmbracelet/swarmy/internal/message"
-	"github.com/charmbracelet/swarmy/internal/oauth"
-	"github.com/charmbracelet/swarmy/internal/permission"
-	"github.com/charmbracelet/swarmy/internal/session"
-	"github.com/charmbracelet/swarmy/internal/ui/common"
-	"github.com/charmbracelet/swarmy/internal/ui/util"
+	"github.com/cloudwithax/swarmy/internal/commands"
+	"github.com/cloudwithax/swarmy/internal/config"
+	"github.com/cloudwithax/swarmy/internal/message"
+	"github.com/cloudwithax/swarmy/internal/oauth"
+	"github.com/cloudwithax/swarmy/internal/permission"
+	"github.com/cloudwithax/swarmy/internal/session"
+	"github.com/cloudwithax/swarmy/internal/ui/common"
+	"github.com/cloudwithax/swarmy/internal/ui/util"
 )
 
 // ActionClose is a message to close the current dialog.

@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/oauth"
+	"github.com/cloudwithax/swarmy/internal/oauth"
 )
 
 // IMPORTANT: The bundled client ID below is from gitlab-vscode-extension and is

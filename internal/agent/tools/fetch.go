@@ -13,7 +13,7 @@ import (
 	"charm.land/fantasy"
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/charmbracelet/swarmy/internal/permission"
+	"github.com/cloudwithax/swarmy/internal/permission"
 )
 
 const FetchToolName = "fetch"

@@ -11,12 +11,11 @@ includes:
 metadata:
   mod_timestamp: "{{ .CommitTimestamp }}"
   license: "FSL-1.1-MIT"
-  homepage: "https://charm.sh/swarmy"
+  homepage: "https://github.com/cloudwithax/swarmy"
   description: "A powerful terminal-based AI assistant for developers, providing intelligent coding assistance directly in your terminal."
   full_description: "A powerful terminal-based AI assistant for developers, providing intelligent coding assistance directly in your terminal."
   maintainers:
-    - "kujtimiihoxha <kujtim@charm.sh>"
-    - "caarlos0 <carlos@charm.sh>" # for aur
+    - "cloudwithax"
 
 nightly:
   publish_release: true
@@ -70,7 +69,7 @@ builds:
       - goos: windows
         goarch: arm
     ldflags:
-      - -s -w -X github.com/charmbracelet/swarmy/internal/version.Version={{.Version}}
+      - -s -w -X github.com/cloudwithax/swarmy/internal/version.Version={{.Version}}
     flags:
       - -trimpath
 
@@ -100,9 +99,6 @@ aur_sources:
   - private_key: "{{ .Env.AUR_KEY }}"
     disable: "{{ with .Prerelease }}true{{ end }}"
     git_url: "ssh://aur@aur.archlinux.org/swarmy.git"
-    commit_author:
-      name: "Charm"
-      email: "charmcli@users.noreply.github.com"
     makedepends:
       - go
       - git
@@ -116,7 +112,7 @@ aur_sources:
       export CGO_CXXFLAGS="${CXXFLAGS}"
       export CGO_LDFLAGS="${LDFLAGS}"
       export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw"
-      go build -ldflags="-w -s -buildid='' -linkmode=external -X github.com/charmbracelet/swarmy/internal/version.Version=v${pkgver}" .
+      go build -ldflags="-w -s -buildid='' -linkmode=external -X github.com/cloudwithax/swarmy/internal/version.Version=v${pkgver}" .
       ./swarmy completion bash >./completions/swarmy.bash
       ./swarmy completion zsh >./completions/swarmy.zsh
       ./swarmy completion fish >./completions/swarmy.fish
@@ -144,9 +140,6 @@ aurs:
   - private_key: "{{ .Env.AUR_KEY }}"
     disable: "{{ with .Prerelease }}true{{ end }}"
     git_url: "ssh://aur@aur.archlinux.org/swarmy-bin.git"
-    commit_author:
-      name: "Charm"
-      email: "charmcli@users.noreply.github.com"
     provides:
       - swarmy
     conflicts:
@@ -179,19 +172,16 @@ aurs:
       install -Dm644 README* "${pkgdir}/usr/share/doc/swarmy/"
 
 furies:
-  - disable: "{{ if (or .Prerelease .IsNightly) }}true{{ end }}"
-    account: "{{ with .Env.FURY_TOKEN }}charmcli{{ else }}{{ end }}"
+  - disable: "true"
+    account: ""
     secret_name: FURY_TOKEN
 
 brews:
   - repository:
-      owner: charmbracelet
+      owner: cloudwithax
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    skip_upload: "{{ with .Prerelease }}true{{ end }}"
-    commit_author:
-      name: "Charm"
-      email: "charmcli@users.noreply.github.com"
+    skip_upload: "true"
     goarm: 7
     extra_install: |-
       bash_completion.install "completions/{{ .ProjectName }}.bash" => "{{ .ProjectName }}"
@@ -201,20 +191,17 @@ brews:
 
 scoops:
   - repository:
-      owner: charmbracelet
+      owner: cloudwithax
       name: scoop-bucket
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    skip_upload: "{{ with .Prerelease }}true{{ end }}"
-    commit_author:
-      name: "Charm"
-      email: "charmcli@users.noreply.github.com"
+    skip_upload: "true"
 
 npms:
-  - name: "@charmland/swarmy"
-    repository: "git+https://github.com/charmbracelet/swarmy.git"
-    bugs: https://github.com/charmbracelet/swarmy/issues
+  - name: "swarmy"
+    repository: "git+https://github.com/cloudwithax/swarmy.git"
+    bugs: https://github.com/cloudwithax/swarmy/issues
     access: public
-    disable: "{{ with .Prerelease }}true{{ end }}"
+    disable: "true"
 
 nfpms:
   - formats:
@@ -261,31 +248,25 @@ sboms:
 
 nix:
   - repository:
-      owner: "charmbracelet"
+      owner: "cloudwithax"
       name: nur
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    commit_author:
-      name: "Charm"
-      email: "charmcli@users.noreply.github.com"
     license: fsl11Mit
     formatter: nixfmt
-    skip_upload: "{{ with .Prerelease }}true{{ end }}"
+    skip_upload: "true"
     extra_install: |-
       installManPage ./manpages/swarmy.1.gz
       installShellCompletion ./completions/*
 
 winget:
-  - publisher: charmbracelet
-    copyright: Charmbracelet, Inc
-    publisher_url: https://charm.land
-    release_notes_url: "https://github.com/charmbracelet/swarmy/releases/tag/{{.Tag}}"
-    license_url: https://github.com/charmbracelet/swarmy/blob/main/LICENSE.md
-    skip_upload: "{{ with .Prerelease }}true{{ end }}"
-    commit_author:
-      name: "Charm"
-      email: "charmcli@users.noreply.github.com"
+  - publisher: cloudwithax
+    copyright: Charmbracelet, Inc; cloudwithax
+    publisher_url: https://github.com/cloudwithax/swarmy
+    release_notes_url: "https://github.com/cloudwithax/swarmy/releases/tag/{{.Tag}}"
+    license_url: https://github.com/cloudwithax/swarmy/blob/main/LICENSE
+    skip_upload: "true"
     repository:
-      owner: "charmbracelet"
+      owner: "cloudwithax"
       name: winget-pkgs
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
       branch: "swarmy-{{.Version}}"

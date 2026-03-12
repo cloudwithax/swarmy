@@ -15,19 +15,19 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
-	"github.com/charmbracelet/swarmy/internal/app"
-	"github.com/charmbracelet/swarmy/internal/config"
-	"github.com/charmbracelet/swarmy/internal/db"
-	"github.com/charmbracelet/swarmy/internal/event"
-	"github.com/charmbracelet/swarmy/internal/projects"
-	"github.com/charmbracelet/swarmy/internal/ui/common"
-	ui "github.com/charmbracelet/swarmy/internal/ui/model"
-	"github.com/charmbracelet/swarmy/internal/version"
 	"github.com/charmbracelet/fang"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/exp/charmtone"
 	"github.com/charmbracelet/x/term"
+	"github.com/cloudwithax/swarmy/internal/app"
+	"github.com/cloudwithax/swarmy/internal/config"
+	"github.com/cloudwithax/swarmy/internal/db"
+	"github.com/cloudwithax/swarmy/internal/event"
+	"github.com/cloudwithax/swarmy/internal/projects"
+	"github.com/cloudwithax/swarmy/internal/ui/common"
+	ui "github.com/cloudwithax/swarmy/internal/ui/model"
+	"github.com/cloudwithax/swarmy/internal/version"
 	"github.com/spf13/cobra"
 )
 
@@ -99,7 +99,7 @@ swarmy --data-dir /path/to/custom/.swarmy
 		if _, err := program.Run(); err != nil {
 			event.Error(err)
 			slog.Error("TUI run error", "error", err)
-			return errors.New("Swarmy crashed. If metrics are enabled, we were notified about it. If you'd like to report it, please copy the stacktrace above and open an issue at https://github.com/charmbracelet/swarmy/issues/new?template=bug.yml") //nolint:staticcheck
+			return errors.New("Swarmy crashed. If you'd like to report it, please copy the stacktrace above and open an issue at https://github.com/cloudwithax/swarmy/issues/new?template=bug.yml") //nolint:staticcheck
 		}
 		return nil
 	},
@@ -229,6 +229,9 @@ func setupApp(cmd *cobra.Command) (*app.App, error) {
 }
 
 func shouldEnableMetrics(cfg *config.Config) bool {
+	if v, _ := strconv.ParseBool(os.Getenv("SWARMY_ENABLE_METRICS")); !v {
+		return false
+	}
 	if v, _ := strconv.ParseBool(os.Getenv("SWARMY_DISABLE_METRICS")); v {
 		return false
 	}

@@ -1,7 +1,7 @@
 package dialog
 
 import (
-	"github.com/charmbracelet/swarmy/internal/ui/styles"
+	"github.com/cloudwithax/swarmy/internal/ui/styles"
 	"github.com/sahilm/fuzzy"
 )
 

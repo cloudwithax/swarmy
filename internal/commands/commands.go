@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/charmbracelet/swarmy/internal/agent/tools/mcp"
-	"github.com/charmbracelet/swarmy/internal/config"
-	"github.com/charmbracelet/swarmy/internal/home"
+	"github.com/cloudwithax/swarmy/internal/agent/tools/mcp"
+	"github.com/cloudwithax/swarmy/internal/config"
+	"github.com/cloudwithax/swarmy/internal/home"
 )
 
 var namedArgPattern = regexp.MustCompile(`\$([A-Z][A-Z0-9_]*)`)

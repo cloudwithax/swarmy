@@ -2,7 +2,7 @@ package common
 
 import (
 	"charm.land/glamour/v2"
-	"github.com/charmbracelet/swarmy/internal/ui/styles"
+	"github.com/cloudwithax/swarmy/internal/ui/styles"
 )
 
 // MarkdownRenderer returns a glamour [glamour.TermRenderer] configured with

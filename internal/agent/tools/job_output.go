@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/swarmy/internal/shell"
+	"github.com/cloudwithax/swarmy/internal/shell"
 )
 
 const (

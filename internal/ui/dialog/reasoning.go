@@ -7,11 +7,11 @@ import (
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/swarmy/internal/config"
-	"github.com/charmbracelet/swarmy/internal/ui/common"
-	"github.com/charmbracelet/swarmy/internal/ui/list"
-	"github.com/charmbracelet/swarmy/internal/ui/styles"
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/cloudwithax/swarmy/internal/config"
+	"github.com/cloudwithax/swarmy/internal/ui/common"
+	"github.com/cloudwithax/swarmy/internal/ui/list"
+	"github.com/cloudwithax/swarmy/internal/ui/styles"
 	"github.com/sahilm/fuzzy"
 )
 

@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/swarmy/internal/lsp"
+	"github.com/cloudwithax/swarmy/internal/lsp"
 )
 
 const LSPRestartToolName = "lsp_restart"

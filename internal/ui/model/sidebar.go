@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/swarmy/internal/ui/common"
-	"github.com/charmbracelet/swarmy/internal/ui/logo"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/layout"
+	"github.com/cloudwithax/swarmy/internal/ui/common"
+	"github.com/cloudwithax/swarmy/internal/ui/logo"
 )
 
 // modelInfo renders the current model information including reasoning

@@ -1,4 +1,4 @@
-module github.com/charmbracelet/swarmy
+module github.com/cloudwithax/swarmy
 
 go 1.26.1
 

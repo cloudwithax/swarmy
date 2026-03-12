@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/oauth"
+	"github.com/cloudwithax/swarmy/internal/oauth"
 )
 
 const (
@@ -47,7 +47,6 @@ func Authorize() (*AuthResponse, error) {
 	params.Set("scope", scope)
 	params.Set("code_challenge", challenge)
 	params.Set("code_challenge_method", "S256")
-	// State is set to the verifier per opencode-anthropic-auth implementation.
 	params.Set("state", verifier)
 
 	return &AuthResponse{

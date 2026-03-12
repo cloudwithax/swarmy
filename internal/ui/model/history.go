@@ -6,7 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/charmbracelet/swarmy/internal/message"
+	"github.com/cloudwithax/swarmy/internal/message"
 )
 
 // promptHistoryLoadedMsg is sent when prompt history is loaded.

@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	githubApiUrl = "https://api.github.com/repos/charmbracelet/swarmy/releases/latest"
+	githubApiUrl = "https://api.github.com/repos/cloudwithax/swarmy/releases/latest"
 	userAgent    = "swarmy/1.0"
 )
 

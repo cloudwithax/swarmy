@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/charmbracelet/swarmy/internal/ui/list"
-	"github.com/charmbracelet/swarmy/internal/ui/styles"
+	"github.com/cloudwithax/swarmy/internal/ui/list"
+	"github.com/cloudwithax/swarmy/internal/ui/styles"
 	"github.com/sahilm/fuzzy"
 )
 

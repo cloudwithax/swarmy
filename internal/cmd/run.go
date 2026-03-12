@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"charm.land/log/v2"
-	"github.com/charmbracelet/swarmy/internal/event"
+	"github.com/cloudwithax/swarmy/internal/event"
 	"github.com/spf13/cobra"
 )
 

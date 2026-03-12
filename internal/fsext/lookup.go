@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/charmbracelet/swarmy/internal/home"
+	"github.com/cloudwithax/swarmy/internal/home"
 )
 
 // Lookup searches for a target files or directories starting from dir

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/charmbracelet/swarmy/internal/home"
+	"github.com/cloudwithax/swarmy/internal/home"
 	"github.com/stretchr/testify/require"
 )
 

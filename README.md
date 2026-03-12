@@ -1,13 +1,36 @@
-# Swarmy
+<p align="center">
+  <img src="./logo.png" alt="Swarmy logo" width="320">
+</p>
 
-A terminal-based AI coding assistant. Connect to LLMs and give them tools to read, write, and execute code.
+<h1 align="center">Swarmy</h1>
+
+<p align="center"><strong>Where agents go to fly.</strong></p>
+
+<p align="center">
+  A beautiful orchestration layer for agentic swarm coding based on
+  <a href="https://github.com/charmbracelet/crush">Crush</a>, from
+  <a href="https://charm.land">Charm</a>.
+</p>
+
+<p align="center">
+  <a href="https://pkg.go.dev/github.com/cloudwithax/swarmy">
+    <img src="https://pkg.go.dev/badge/github.com/cloudwithax/swarmy.svg" alt="Go Reference">
+  </a>
+  <a href="https://goreportcard.com/report/github.com/cloudwithax/swarmy">
+    <img src="https://goreportcard.com/badge/github.com/cloudwithax/swarmy" alt="Go Report Card">
+  </a>
+  <a href="./LICENSE">
+    <img src="https://img.shields.io/badge/license-FSL--1.1--MIT-0f766e" alt="License">
+  </a>
+  <img src="https://img.shields.io/badge/platform-linux%20%7C%20macOS%20%7C%20windows-0f766e" alt="Platforms">
+</p>
 
 ## Features
 
 - **Multi-Model:** choose from a wide range of LLMs or add your own via OpenAI- or Anthropic-compatible APIs
 - **Flexible:** switch LLMs mid-session while preserving context
 - **Session-Based:** maintain multiple work sessions and contexts per project
-- **Swarm Mode:** enabled by default, plans edits per file and assigns one worker agent per file for cost-insensitive code changes
+- **Swarm Mode:** the agent decides how to delegate work across multiple workers by default based on file-level context
 - **LSP-Enhanced:** uses LSPs for additional context, just like you do
 - **Extensible:** add capabilities via MCPs (`http`, `stdio`, and `sse`)
 - **Headless ACP:** expose Swarmy over ACP so external orchestrators can discover and run it without the TUI
@@ -16,7 +39,7 @@ A terminal-based AI coding assistant. Connect to LLMs and give them tools to rea
 ## Installation
 
 ```
-go install github.com/charmbracelet/swarmy@latest
+go install github.com/cloudwithax/swarmy@latest
 ```
 
 ## Getting Started
@@ -173,4 +196,4 @@ This exposes a single ACP agent named `swarmy` on port `8000`. By default the AC
 
 ## License
 
-See [LICENSE.md](LICENSE.md).
+See [LICENSE](LICENSE).

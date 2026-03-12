@@ -9,12 +9,12 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/swarmy/internal/commands"
-	"github.com/charmbracelet/swarmy/internal/config"
-	"github.com/charmbracelet/swarmy/internal/ui/common"
-	"github.com/charmbracelet/swarmy/internal/ui/list"
-	"github.com/charmbracelet/swarmy/internal/ui/styles"
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/cloudwithax/swarmy/internal/commands"
+	"github.com/cloudwithax/swarmy/internal/config"
+	"github.com/cloudwithax/swarmy/internal/ui/common"
+	"github.com/cloudwithax/swarmy/internal/ui/list"
+	"github.com/cloudwithax/swarmy/internal/ui/styles"
 )
 
 // CommandsID is the identifier for the commands dialog.

@@ -6,7 +6,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 
-	"github.com/charmbracelet/swarmy/internal/cmd"
+	"github.com/cloudwithax/swarmy/internal/cmd"
 	_ "github.com/joho/godotenv/autoload"
 )
 

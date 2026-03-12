@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/config"
+	"github.com/cloudwithax/swarmy/internal/config"
 )
 
 const projectsFileName = "projects.json"

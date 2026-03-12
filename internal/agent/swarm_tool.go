@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"charm.land/fantasy"
-	"github.com/charmbracelet/swarmy/internal/agent/prompt"
-	"github.com/charmbracelet/swarmy/internal/agent/tools"
-	"github.com/charmbracelet/swarmy/internal/config"
+	"github.com/cloudwithax/swarmy/internal/agent/prompt"
+	"github.com/cloudwithax/swarmy/internal/agent/tools"
+	"github.com/cloudwithax/swarmy/internal/config"
 	"golang.org/x/sync/errgroup"
 )
 

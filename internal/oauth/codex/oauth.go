@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/swarmy/internal/oauth"
+	"github.com/cloudwithax/swarmy/internal/oauth"
 )
 
 const (
@@ -274,6 +274,8 @@ func StartBrowserAuth(ctx context.Context) (*BrowserAuthorize, error) {
 	params.Set("id_token_add_organizations", "true")
 	params.Set("codex_cli_simplified_flow", "true")
 	params.Set("state", state)
+	// upstream doesnt have a client id yet, we need to use something else
+	// sorry dax <3
 	params.Set("originator", "opencode")
 
 	authURL := issuer + "/oauth/authorize?" + params.Encode()

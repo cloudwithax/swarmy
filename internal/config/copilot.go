@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"charm.land/catwalk/pkg/catwalk"
-	"github.com/charmbracelet/swarmy/internal/oauth"
-	"github.com/charmbracelet/swarmy/internal/oauth/copilot"
+	"github.com/cloudwithax/swarmy/internal/oauth"
+	"github.com/cloudwithax/swarmy/internal/oauth/copilot"
 )
 
 func (c *Config) ImportCopilot() (*oauth.Token, bool) {

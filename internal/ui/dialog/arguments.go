@@ -14,10 +14,10 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/charmbracelet/swarmy/internal/commands"
-	"github.com/charmbracelet/swarmy/internal/ui/common"
-	"github.com/charmbracelet/swarmy/internal/ui/util"
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/cloudwithax/swarmy/internal/commands"
+	"github.com/cloudwithax/swarmy/internal/ui/common"
+	"github.com/cloudwithax/swarmy/internal/ui/util"
 )
 
 // ArgumentsID is the identifier for the arguments dialog.
