@@ -1,0 +1,96 @@
+version: 2
+
+project_name: swarmy
+
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+
+before:
+  hooks:
+    - go mod tidy
+    - rm -rf completions
+    - mkdir completions
+    - rm -rf manpages
+    - mkdir manpages
+    - sh -c 'go run . completion bash >./completions/swarmy.bash'
+    - sh -c 'go run . completion zsh >./completions/swarmy.zsh'
+    - sh -c 'go run . completion fish >./completions/swarmy.fish'
+    - sh -c 'go run . man | gzip -c >./manpages/swarmy.1.gz'
+
+builds:
+  - id: swarmy
+    env:
+      - CGO_ENABLED=0
+      - GOEXPERIMENT=greenteagc
+    goos:
+      - linux
+      - darwin
+      - windows
+      - freebsd
+      - openbsd
+      - netbsd
+    goarch:
+      - amd64
+      - arm64
+      - "386"
+      - arm
+    goarm:
+      - "7"
+    ignore:
+      - goos: windows
+        goarch: arm
+    ldflags:
+      - -s -w -X github.com/cloudwithax/swarmy/internal/version.Version={{.Version}}
+    flags:
+      - -trimpath
+
+archives:
+  - ids: [swarmy]
+    name_template: >-
+      swarmy_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- with .Arm}}v{{ . }}{{ end }}
+    wrap_in_directory: true
+    files:
+      - README*
+      - LICENSE*
+      - manpages/*
+      - completions/*
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
+
+nfpms:
+  - id: packages
+    package_name: swarmy
+    maintainer: cloudwithax
+    ids: [swarmy]
+    formats:
+      - apk
+      - deb
+      - rpm
+      - archlinux
+    contents:
+      - src: ./completions/swarmy.bash
+        dst: /etc/bash_completion.d/swarmy
+      - src: ./completions/swarmy.fish
+        dst: /usr/share/fish/vendor_completions.d/swarmy.fish
+      - src: ./completions/swarmy.zsh
+        dst: /usr/share/zsh/site-functions/_swarmy
+      - src: ./manpages/swarmy.1.gz
+        dst: /usr/share/man/man1/swarmy.1.gz
+
+release:
+  prerelease: auto
+
+changelog:
+  sort: asc

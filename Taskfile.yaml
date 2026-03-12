@@ -158,8 +158,8 @@ tasks:
         sh: svu next --always || go run github.com/caarlos0/svu/v3@latest next --always
     prompt: "This will release {{.NEXT}}. Continue?"
     preconditions:
-      - sh: '[ $(git symbolic-ref --short HEAD) = "main" ]'
-        msg: Not on main branch
+      - sh: 'branch=$(git symbolic-ref --short HEAD); [ "$branch" = "main" ] || [ "$branch" = "master" ]'
+        msg: Not on main or master branch
       - sh: "[ $(git status --porcelain=2 | wc -l) = 0 ]"
         msg: "Git is dirty"
       - sh: 'gh run list --workflow build.yml --commit $(git rev-parse HEAD) --status success --json conclusion -q ".[0].conclusion" | grep -q success'
