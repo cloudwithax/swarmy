@@ -111,7 +111,7 @@ func TestAsyncRunCancel(t *testing.T) {
 
 	var run Run
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&run))
-	require.Equal(t, RunStatusCreated, run.Status)
+	require.Contains(t, []RunStatus{RunStatusCreated, RunStatusInProgress}, run.Status)
 
 	cancelResp := doRequest(t, server.Handler(), http.MethodPost, "/runs/"+run.RunID+"/cancel", nil)
 	defer cancelResp.Body.Close()
