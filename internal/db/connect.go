@@ -6,9 +6,13 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"sync"
 
 	"github.com/pressly/goose/v3"
 )
+
+// gooseMu protects goose global configuration from concurrent access.
+var gooseMu sync.Mutex
 
 var pragmas = map[string]string{
 	"foreign_keys":  "ON",
@@ -36,6 +40,9 @@ func Connect(ctx context.Context, dataDir string) (*sql.DB, error) {
 		db.Close()
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
+
+	gooseMu.Lock()
+	defer gooseMu.Unlock()
 
 	goose.SetBaseFS(FS)
 
