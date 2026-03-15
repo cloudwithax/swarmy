@@ -184,3 +184,8 @@ tasks:
       - go get charm.land/fantasy
       - go get charm.land/catwalk
       - go mod tidy
+
+  acp:soak:
+    desc: Run long-horizon ACP resilience soak test
+    cmds:
+      - /home/clxud/Documents/github/swarmy/.venv/bin/python scripts/acp_soak_resilience.py --base-url {{default "http://127.0.0.1:8000" .BASE_URL}} --agent {{default "swarmy" .AGENT}} --duration-seconds {{default "3600" .DURATION}} --concurrency {{default "2" .CONCURRENCY}} --request-timeout-seconds {{default "180" .REQUEST_TIMEOUT}} --max-retries {{default "4" .MAX_RETRIES}} --json-output {{default "tmp/acp-soak-summary.json" .JSON_OUTPUT}} {{.CLI_ARGS}}
