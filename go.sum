@@ -4,8 +4,6 @@ charm.land/bubbletea/v2 v2.0.2 h1:4CRtRnuZOdFDTWSff9r8QFt/9+z6Emubz3aDMnf/dx0=
 charm.land/bubbletea/v2 v2.0.2/go.mod h1:3LRff2U4WIYXy7MTxfbAQ+AdfM3D8Xuvz2wbsOD9OHQ=
 charm.land/catwalk v0.28.4 h1:YaaXA1k0v7CKvvT+Gh1pDD7XrlUR93kROdaWqkkglRw=
 charm.land/catwalk v0.28.4/go.mod h1:+fqw/6YGNtvapvPy9vhwA/fAMxVjD2K8hVIKYov8Vhg=
-charm.land/fantasy v0.12.1 h1:awszoi5O9FIjMEkfyCMiLJfVRNLckp/zQkFrA6IxQqc=
-charm.land/fantasy v0.12.1/go.mod h1:QeRVUeG1XNTWBszRAbhUtPyX1VWs6zjkCxwfcwnICdc=
 charm.land/glamour/v2 v2.0.0 h1:IDBoqLEy7Hdpb9VOXN+khLP/XSxtJy1VsHuW/yF87+U=
 charm.land/glamour/v2 v2.0.0/go.mod h1:kjq9WB0s8vuUYZNYey2jp4Lgd9f4cKdzAw88FZtpj/w=
 charm.land/lipgloss/v2 v2.0.1 h1:6Xzrn49+Py1Um5q/wZG1gWgER2+7dUyZ9XMEufqPSys=
@@ -134,6 +132,8 @@ github.com/clipperhouse/displaywidth v0.11.0 h1:lBc6kY44VFw+TDx4I8opi/EtL9m20WSE
 github.com/clipperhouse/displaywidth v0.11.0/go.mod h1:bkrFNkf81G8HyVqmKGxsPufD3JhNl3dSqnGhOoSD/o0=
 github.com/clipperhouse/uax29/v2 v2.7.0 h1:+gs4oBZ2gPfVrKPthwbMzWZDaAFPGYK72F0NJv2v7Vk=
 github.com/clipperhouse/uax29/v2 v2.7.0/go.mod h1:EFJ2TJMRUaplDxHKj1qAEhCtQPW2tJSwu5BF98AuoVM=
+github.com/cloudwithax/fantasy v0.0.0-20260315210130-c464f2b8b38b h1:bGpMKFGsaDK7rD9r7aZQWm9hd4tl9LqFtl9q/s4ub6s=
+github.com/cloudwithax/fantasy v0.0.0-20260315210130-c464f2b8b38b/go.mod h1:QeRVUeG1XNTWBszRAbhUtPyX1VWs6zjkCxwfcwnICdc=
 github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2 h1:aBangftG7EVZoUb69Os8IaYg++6uMOdKK83QtkkvJik=
 github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2/go.mod h1:qwXFYgsP6T7XnJtbKlf1HP8AjxZZyzxMmc+Lq5GjlU4=
 github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
