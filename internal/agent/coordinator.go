@@ -27,7 +27,6 @@ import (
 	"github.com/cloudwithax/swarmy/internal/log"
 	"github.com/cloudwithax/swarmy/internal/lsp"
 	"github.com/cloudwithax/swarmy/internal/message"
-	"github.com/cloudwithax/swarmy/internal/oauth/copilot"
 	"github.com/cloudwithax/swarmy/internal/permission"
 	"github.com/cloudwithax/swarmy/internal/pubsub"
 	"github.com/cloudwithax/swarmy/internal/session"
@@ -733,12 +732,9 @@ func (c *coordinator) buildOpenaiCompatProvider(baseURL, apiKey string, headers 
 		openaicompat.WithAPIKey(apiKey),
 	}
 
-	// Set HTTP client based on provider and debug mode.
+	// Set HTTP client based on debug mode.
 	var httpClient *http.Client
-	if providerID == string(catwalk.InferenceProviderCopilot) {
-		opts = append(opts, openaicompat.WithUseResponsesAPI())
-		httpClient = copilot.NewClient(isSubAgent, c.cfg.Options.Debug)
-	} else if c.cfg.Options.Debug {
+	if c.cfg.Options.Debug {
 		httpClient = log.NewHTTPClient()
 	}
 	if httpClient != nil {
@@ -849,6 +845,11 @@ func (c *coordinator) isAnthropicThinking(model config.SelectedModel) bool {
 }
 
 func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model config.SelectedModel, isSubAgent bool) (fantasy.Provider, error) {
+	// Force opencode-go to use openai-compat provider type
+	if providerCfg.ID == "opencode-go" {
+		providerCfg.Type = openaicompat.Name
+	}
+
 	headers := maps.Clone(providerCfg.ExtraHeaders)
 	if headers == nil {
 		headers = make(map[string]string)
