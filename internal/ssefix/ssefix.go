@@ -47,9 +47,16 @@ func (s *fixedEventStreamDecoder) Next() bool {
 			if data.Len() == 0 {
 				continue
 			}
+			// Check if data is [DONE] marker - skip it
+			dataBytes := data.Bytes()
+			if bytes.Equal(bytes.TrimSpace(dataBytes), []byte("[DONE]")) {
+				data.Reset()
+				event = ""
+				continue
+			}
 			s.evt = ssestream.Event{
 				Type: event,
-				Data: data.Bytes(),
+				Data: dataBytes,
 			}
 			return true
 		}
