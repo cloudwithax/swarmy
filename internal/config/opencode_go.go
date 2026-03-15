@@ -7,7 +7,7 @@ import (
 // OpenCodeGoProvider returns the OpenCode Go provider configuration.
 // OpenCode Go is a low-cost subscription plan ($5 first month, then $10/month)
 // that provides reliable access to popular open coding models.
-// Note: Go uses the same API key as Zen but a different endpoint.
+// Note: Go uses the same Zen API endpoint and key, but accesses different models.
 func OpenCodeGoProvider() catwalk.Provider {
 	return catwalk.Provider{
 		Name:                "OpenCode Go",
@@ -15,7 +15,7 @@ func OpenCodeGoProvider() catwalk.Provider {
 		APIKey:              "$ZEN_API_KEY",
 		APIEndpoint:         "https://opencode.ai/zen/go/v1",
 		Type:                "openai-compat",
-		DefaultLargeModelID: "glm-5",
+		DefaultLargeModelID: "kimi-k2.5",
 		DefaultSmallModelID: "minimax-m2.5",
 		Models:              openCodeGoModels(),
 		DefaultHeaders:      map[string]string{},

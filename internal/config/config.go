@@ -896,13 +896,16 @@ func (c *ProviderConfig) TestConnection(resolver VariableResolver) error {
 		}
 		return nil
 	case "opencode-zen", "opencode-go":
-		// OpenCode Zen/Go providers use the OpenCode API which returns 200 OK
-		// for valid keys when calling /models endpoint.
-		// Just check the key format since we already tested the endpoint works.
+		// OpenCode Zen/Go providers - just validate key format.
+		// The Go endpoint doesn't have a /models endpoint for testing.
 		if !strings.HasPrefix(apiKey, "sk-") {
 			return fmt.Errorf("invalid API key format for provider %s", c.ID)
 		}
-		// Fall through to the default OpenAI-compatible test below
+		// Skip the HTTP test for Go since it doesn't have a /models endpoint
+		if providerID == "opencode-go" {
+			return nil
+		}
+		// For Zen, fall through to test with /models endpoint
 	}
 
 	switch c.Type {
