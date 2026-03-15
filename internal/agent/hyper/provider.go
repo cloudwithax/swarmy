@@ -210,9 +210,13 @@ func (m *languageModel) Stream(ctx context.Context, call fantasy.Call) (fantasy.
 			dataBuf   bytes.Buffer
 			sawFinish bool
 			dispatch  = func() bool {
-				if dataBuf.Len() == 0 || event == "" {
-					dataBuf.Reset()
+				// Skip dispatching events with empty data (e.g., from consecutive comment lines like ": OPENROUTER PROCESSING")
+				if dataBuf.Len() == 0 {
 					event = ""
+					return true
+				}
+				if event == "" {
+					dataBuf.Reset()
 					return true
 				}
 				var part fantasy.StreamPart

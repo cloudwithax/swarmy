@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/cloudwithax/swarmy/internal/cmd"
+	_ "github.com/cloudwithax/swarmy/internal/ssefix"
 	_ "github.com/joho/godotenv/autoload"
 )
 
