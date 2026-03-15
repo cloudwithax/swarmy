@@ -201,7 +201,9 @@ func normalizeSwarmPlanPath(workingDir, candidate string) (string, bool) {
 		return "", false
 	}
 
-	if filepath.IsAbs(cleaned) {
+	isAbsLike := filepath.IsAbs(cleaned) || filepath.VolumeName(cleaned) != "" || strings.HasPrefix(cleaned, "/") || strings.HasPrefix(cleaned, "\\")
+
+	if isAbsLike {
 		rel, err := filepath.Rel(workingDir, cleaned)
 		if err != nil {
 			return "", false
@@ -213,7 +215,12 @@ func normalizeSwarmPlanPath(workingDir, candidate string) (string, bool) {
 		return "", false
 	}
 
-	return filepath.ToSlash(cleaned), true
+	finalSlash := filepath.ToSlash(cleaned)
+	if strings.HasPrefix(finalSlash, "/") || filepath.VolumeName(cleaned) != "" {
+		return "", false
+	}
+
+	return finalSlash, true
 }
 
 func buildSwarmSummary(files []string, results []swarmWorkerResult) string {
