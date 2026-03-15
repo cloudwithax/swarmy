@@ -51,3 +51,5 @@ manpages/
 completions/swarmy.*sh
 .prettierignore
 .task
+
+/scripts
