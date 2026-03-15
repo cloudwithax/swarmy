@@ -91,6 +91,7 @@ nfpms:
 
 release:
   prerelease: auto
+  replace_existing_draft: true
 
 changelog:
   sort: asc
