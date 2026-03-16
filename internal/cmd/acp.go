@@ -15,6 +15,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// DaemonManager provides an interface for daemon operations.
+// This is implemented in platform-specific files using build tags.
+
 var acpCmd = &cobra.Command{
 	Use:   "acp",
 	Short: "Expose Swarmy over the Agent Communication Protocol",
@@ -28,6 +31,11 @@ var acpServeCmd = &cobra.Command{
 		host, _ := cmd.Flags().GetString("host")
 		port, _ := cmd.Flags().GetInt("port")
 		autoApprove, _ := cmd.Flags().GetBool("auto-approve")
+		daemon, _ := cmd.Flags().GetBool("daemon")
+
+		if daemon {
+			return startDaemon(host, port, autoApprove)
+		}
 
 		ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
@@ -77,10 +85,60 @@ var acpServeCmd = &cobra.Command{
 	},
 }
 
+var acpStopCmd = &cobra.Command{
+	Use:   "stop",
+	Short: "Stop the running ACP daemon",
+	Long:  "Stop the ACP server daemon that was started with 'swarmy acp serve --daemon'.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if !IsDaemonRunning() {
+			return fmt.Errorf("no daemon is currently running")
+		}
+
+		pid := ReadPidFile()
+		if err := StopDaemon(); err != nil {
+			return fmt.Errorf("failed to stop daemon: %w", err)
+		}
+
+		fmt.Printf("ACP daemon stopped (PID: %d)\n", pid)
+		return nil
+	},
+}
+
+var acpStatusCmd = &cobra.Command{
+	Use:   "status",
+	Short: "Check the status of the ACP daemon",
+	Long:  "Check if the ACP daemon is running and display its PID.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if IsDaemonRunning() {
+			pid := ReadPidFile()
+			fmt.Printf("ACP daemon is running (PID: %d)\n", pid)
+			fmt.Printf("Log file: %s\n", GetDaemonLogPath())
+		} else {
+			fmt.Println("ACP daemon is not running")
+		}
+		return nil
+	},
+}
+
 func init() {
 	acpServeCmd.Flags().String("host", "127.0.0.1", "Host interface to bind the ACP server to")
 	acpServeCmd.Flags().Int("port", 8000, "Port to bind the ACP server to")
 	acpServeCmd.Flags().Bool("auto-approve", true, "Automatically approve tool permissions for ACP-created runs")
+	acpServeCmd.Flags().Bool("daemon", false, "Run the server in the background as a daemon")
 	acpCmd.AddCommand(acpServeCmd)
+	acpCmd.AddCommand(acpStopCmd)
+	acpCmd.AddCommand(acpStatusCmd)
 	rootCmd.AddCommand(acpCmd)
+}
+
+// startDaemon starts the ACP server in the background as a daemon process.
+// This function is implemented in platform-specific files (acp_daemon_unix.go
+// and acp_daemon_windows.go) using build tags.
+func startDaemon(host string, port int, autoApprove bool) error {
+	pid, err := StartDaemon(host, port, autoApprove)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("ACP server started as daemon (PID: %d)\n", pid)
+	return nil
 }
