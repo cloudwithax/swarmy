@@ -891,6 +891,13 @@ func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model con
 			}
 			providerCfg.ExtraBody["tool_stream"] = true
 		}
+		// OpenCode providers need tool_stream for GLM models to work properly with tools.
+		if providerCfg.ID == "opencode-zen" || providerCfg.ID == "opencode-go" {
+			if providerCfg.ExtraBody == nil {
+				providerCfg.ExtraBody = map[string]any{}
+			}
+			providerCfg.ExtraBody["tool_stream"] = true
+		}
 		return c.buildOpenaiCompatProvider(baseURL, apiKey, headers, providerCfg.ExtraBody, providerCfg.ID, isSubAgent)
 	case hyper.Name:
 		return c.buildHyperProvider(baseURL, apiKey)
@@ -1058,7 +1065,7 @@ func (c *coordinator) runSubAgent(ctx context.Context, params subAgentParams) (f
 		NonInteractive:   true,
 	})
 	if err != nil {
-		return fantasy.NewTextErrorResponse("error generating response"), nil
+		return fantasy.NewTextErrorResponse(fmt.Sprintf("error generating response: %v", err)), nil
 	}
 
 	// Update parent session cost

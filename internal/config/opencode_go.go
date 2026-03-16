@@ -33,7 +33,7 @@ func openCodeGoModels() []catwalk.Model {
 			CostPer1MOut:     3.2,
 			ContextWindow:    204800,
 			DefaultMaxTokens: 65536,
-			CanReason:        false,
+			CanReason:        true,
 			SupportsImages:   false,
 		},
 		{

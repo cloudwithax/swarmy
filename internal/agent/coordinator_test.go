@@ -210,7 +210,8 @@ func TestRunSubAgent(t *testing.T) {
 		// runSubAgent returns (errorResponse, nil) when agent.Run fails — not a Go error.
 		require.NoError(t, err)
 		assert.True(t, resp.IsError)
-		assert.Equal(t, "error generating response", resp.Content)
+		assert.Contains(t, resp.Content, "error generating response")
+		assert.Contains(t, resp.Content, "agent exploded")
 	})
 
 	t.Run("session setup callback is invoked", func(t *testing.T) {
