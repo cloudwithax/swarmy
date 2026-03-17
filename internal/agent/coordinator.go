@@ -10,10 +10,14 @@ import (
 	"io"
 	"log/slog"
 	"maps"
+	"math"
+	"math/rand"
 	"net/http"
 	"os"
 	"slices"
 	"strings"
+	"sync"
+	"time"
 
 	"charm.land/catwalk/pkg/catwalk"
 	"charm.land/fantasy"
@@ -86,6 +90,64 @@ type coordinator struct {
 	agents       map[string]SessionAgent
 
 	readyWg errgroup.Group
+
+	// rateLimiter is used to enforce rate limits for providers like NVIDIA NIM.
+	// For NVIDIA NIM, this enforces 40 requests per minute (1 request per 1.5 seconds).
+	rateLimiter   map[string]*tokenBucket
+	rateLimiterMu sync.RWMutex
+}
+
+// tokenBucket implements a simple token bucket rate limiter.
+type tokenBucket struct {
+	tokens    float64
+	lastRefill time.Time
+	mu        sync.Mutex
+	// rate is the number of tokens added per second.
+	rate float64
+	// capacity is the maximum number of tokens (bucket size).
+	capacity float64
+}
+
+// newTokenBucket creates a new token bucket with the specified rate (tokens per second)
+// and capacity (maximum burst size).
+func newTokenBucket(rate, capacity float64) *tokenBucket {
+	return &tokenBucket{
+		tokens:     capacity,
+		lastRefill: time.Now(),
+		rate:       rate,
+		capacity:   capacity,
+	}
+}
+
+// wait blocks until a token is available. It returns false if the context is cancelled.
+func (tb *tokenBucket) wait(ctx context.Context) bool {
+	tb.mu.Lock()
+	defer tb.mu.Unlock()
+
+	for tb.tokens < 1 {
+		// Refill tokens based on elapsed time.
+		now := time.Now()
+		elapsed := now.Sub(tb.lastRefill).Seconds()
+		tb.tokens = min(tb.capacity, tb.tokens+elapsed*tb.rate)
+		tb.lastRefill = now
+
+		if tb.tokens < 1 {
+			// Need to wait for a token.
+			waitTime := time.Duration((1 - tb.tokens) / tb.rate * float64(time.Second))
+			tb.mu.Unlock()
+
+			select {
+			case <-ctx.Done():
+				tb.mu.Lock()
+				return false
+			case <-time.After(waitTime):
+				tb.mu.Lock()
+			}
+		}
+	}
+
+	tb.tokens--
+	return true
 }
 
 func NewCoordinator(
@@ -109,6 +171,7 @@ func NewCoordinator(
 		lspManager:  lspManager,
 		notify:      notify,
 		agents:      make(map[string]SessionAgent),
+		rateLimiter: make(map[string]*tokenBucket),
 	}
 
 	agentCfg, ok := cfg.Agents[config.AgentCoder]
@@ -173,6 +236,10 @@ func (c *coordinator) Run(ctx context.Context, sessionID string, prompt string, 
 		}
 	}
 
+	// Check rate limiting for providers that require it (e.g., NVIDIA NIM).
+	// This blocks until a token is available.
+	c.waitForRateLimit(ctx, providerCfg.ID)
+
 	run := func() (*fantasy.AgentResult, error) {
 		return c.currentAgent.Run(ctx, SessionAgentCall{
 			SessionID:        sessionID,
@@ -185,6 +252,7 @@ func (c *coordinator) Run(ctx context.Context, sessionID string, prompt string, 
 			TopK:             topK,
 			FrequencyPenalty: freqPenalty,
 			PresencePenalty:  presPenalty,
+			ProviderID:       providerCfg.ID,
 		})
 	}
 	result, originalErr := run()
@@ -206,6 +274,15 @@ func (c *coordinator) Run(ctx context.Context, sessionID string, prompt string, 
 			slog.Debug("Retrying request with refreshed API key", "provider", providerCfg.ID)
 			return run()
 		}
+	}
+
+	// Handle rate limit errors (429) with exponential backoff.
+	if c.isRateLimitError(originalErr) {
+		result, err := c.retryWithExponentialBackoff(ctx, run, providerCfg.ID)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
 	}
 
 	return result, originalErr
@@ -981,6 +1058,106 @@ func (c *coordinator) Summarize(ctx context.Context, sessionID string) error {
 func (c *coordinator) isUnauthorized(err error) bool {
 	var providerErr *fantasy.ProviderError
 	return errors.As(err, &providerErr) && providerErr.StatusCode == http.StatusUnauthorized
+}
+
+// isRateLimitError checks if the error is a rate limit (429) error.
+func (c *coordinator) isRateLimitError(err error) bool {
+	var providerErr *fantasy.ProviderError
+	return errors.As(err, &providerErr) && providerErr.StatusCode == http.StatusTooManyRequests
+}
+
+// retryWithExponentialBackoff retries the run function with exponential backoff
+// for rate limit errors. It will retry up to maxRetries times with increasing delays.
+func (c *coordinator) retryWithExponentialBackoff(
+	ctx context.Context,
+	run func() (*fantasy.AgentResult, error),
+	providerID string,
+) (*fantasy.AgentResult, error) {
+	const maxRetries = 5
+	const baseDelay = 2 * time.Second
+	const maxDelay = 60 * time.Second
+
+	var lastErr error
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		delay := c.computeBackoffDelay(attempt, baseDelay, maxDelay)
+
+		slog.Debug("Rate limited, backing off before retry",
+			"provider", providerID,
+			"attempt", attempt+1,
+			"maxRetries", maxRetries,
+			"delay", delay,
+		)
+
+		// Wait for the computed delay, but respect context cancellation.
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(delay):
+		}
+
+		// Also wait for rate limiter to allow the request.
+		c.waitForRateLimit(ctx, providerID)
+
+		result, err := run()
+		if err == nil {
+			return result, nil
+		}
+
+		lastErr = err
+		if !c.isRateLimitError(err) {
+			// Not a rate limit error, return immediately.
+			return nil, err
+		}
+	}
+
+	slog.Error("Max retries exceeded for rate limited request", "provider", providerID, "error", lastErr)
+	return nil, fmt.Errorf("max retries exceeded for rate limit: %w", lastErr)
+}
+
+// computeBackoffDelay calculates the backoff delay with jitter for a given attempt.
+// It uses exponential backoff: delay = min(maxDelay, baseDelay * 2^attempt) + jitter.
+func (c *coordinator) computeBackoffDelay(attempt int, baseDelay, maxDelay time.Duration) time.Duration {
+	// Calculate exponential delay: baseDelay * 2^attempt.
+	exponentialDelay := float64(baseDelay) * math.Pow(2, float64(attempt))
+
+	// Cap at maxDelay.
+	if exponentialDelay > float64(maxDelay) {
+		exponentialDelay = float64(maxDelay)
+	}
+
+	// Add jitter (±25%) to prevent thundering herd.
+	jitter := (rand.Float64() - 0.5) * 0.5 * exponentialDelay
+	delay := time.Duration(exponentialDelay + jitter)
+
+	return delay
+}
+
+// waitForRateLimit blocks until the rate limiter allows a request for the given provider.
+// For NVIDIA NIM, this enforces 40 requests per minute (1 request per 1.5 seconds).
+func (c *coordinator) waitForRateLimit(ctx context.Context, providerID string) {
+	// Only apply rate limiting to NVIDIA NIM provider.
+	if providerID != "nvidia-nim" {
+		return
+	}
+
+	c.rateLimiterMu.RLock()
+	tb, exists := c.rateLimiter[providerID]
+	c.rateLimiterMu.RUnlock()
+
+	if !exists {
+		c.rateLimiterMu.Lock()
+		// Double-check after acquiring write lock.
+		tb, exists = c.rateLimiter[providerID]
+		if !exists {
+			// For NVIDIA NIM: 40 requests per minute = 1 request per 1.5 seconds.
+			// Rate = 40/60 = 0.666... tokens per second, capacity = 1 for strict pacing.
+			tb = newTokenBucket(40.0/60.0, 1)
+			c.rateLimiter[providerID] = tb
+		}
+		c.rateLimiterMu.Unlock()
+	}
+
+	tb.wait(ctx)
 }
 
 func (c *coordinator) refreshOAuth2Token(ctx context.Context, providerCfg config.ProviderConfig) error {

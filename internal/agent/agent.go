@@ -76,6 +76,7 @@ type SessionAgentCall struct {
 	FrequencyPenalty *float64
 	PresencePenalty  *float64
 	NonInteractive   bool
+	ProviderID       string // ProviderID is the ID of the provider being used (e.g., "nvidia-nim")
 }
 
 type SessionAgent interface {
@@ -568,6 +569,11 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 	// Release active request before processing queued messages.
 	a.activeRequests.Del(call.SessionID)
 	cancel()
+
+	// Sanitize NVIDIA NIM output if needed
+	if result != nil && call.ProviderID == "nvidia-nim" {
+		result = a.sanitizeNvidiaNIMOutput(result)
+	}
 
 	queuedMessages, ok := a.messageQueue.Get(call.SessionID)
 	if !ok || len(queuedMessages) == 0 {
@@ -1175,4 +1181,47 @@ func buildSummaryPrompt(todos []session.Todo) string {
 		sb.WriteString("Instruct the resuming assistant to use the `todos` tool to continue tracking progress on these tasks.")
 	}
 	return sb.String()
+}
+
+// sanitizeNvidiaNIMOutput cleans up non-standard output formats from NVIDIA NIM models.
+// NVIDIA NIM models sometimes produce outputs with extra whitespace, control characters,
+// or non-standard formatting that needs to be normalized.
+func (a *sessionAgent) sanitizeNvidiaNIMOutput(result *fantasy.AgentResult) *fantasy.AgentResult {
+	if result == nil || result.Response.Content.Text() == "" {
+		return result
+	}
+
+	text := result.Response.Content.Text()
+
+	// Remove excessive whitespace at the start and end.
+	text = strings.TrimSpace(text)
+
+	// Normalize multiple consecutive newlines to at most two.
+	for strings.Contains(text, "\n\n\n") {
+		text = strings.ReplaceAll(text, "\n\n\n", "\n\n")
+	}
+
+	// Remove control characters except for standard whitespace.
+	var cleaned strings.Builder
+	for _, r := range text {
+		if r == '\t' || r == '\n' || r == '\r' || (r >= ' ' && r <= '~') || r >= '\u00A0' {
+			cleaned.WriteRune(r)
+		}
+	}
+
+	// Update the result with cleaned content.
+	// Note: We create a new result with the cleaned text since fantasy.AgentResult
+	// may not have a setter for the content.
+	sanitizedResult := *result
+	sanitizedResult.Response = fantasy.Response{
+		Content: fantasy.ResponseContent{fantasy.TextContent{
+			Text: cleaned.String(),
+		}},
+		FinishReason:     result.Response.FinishReason,
+		Usage:            result.Response.Usage,
+		Warnings:         result.Response.Warnings,
+		ProviderMetadata: result.Response.ProviderMetadata,
+	}
+
+	return &sanitizedResult
 }
