@@ -16,7 +16,7 @@ before:
     - sh -c 'go run . completion zsh >./completions/swarmy.zsh'
     - sh -c 'go run . completion fish >./completions/swarmy.fish'
     - sh -c 'go run . man | gzip -c >./manpages/swarmy.1.gz'
-    - go run scripts/generate_resolver.go {{.Version}} "https://github.com/cloudwithax/swarmy/releases/tag/{{.Version}}" > resolver.json
+    - sh -c 'go run scripts/generate_resolver.go {{.Version}} "https://github.com/cloudwithax/swarmy/releases/tag/{{.Version}}" > resolver.json'
 
 builds:
   - id: swarmy
