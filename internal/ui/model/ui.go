@@ -2394,8 +2394,8 @@ func (m *UI) generateLayout(w, h int) uiLayout {
 	helpHeight := 1
 	// The editor height
 	editorHeight := 5
-	// The sidebar width
-	sidebarWidth := 30
+	// The sidebar width (must be wide enough for "SWARMY" logo which is ~34 chars)
+	sidebarWidth := 36
 	// The header height
 	const landingHeaderHeight = 4
 
