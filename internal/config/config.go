@@ -520,9 +520,9 @@ func (c *Config) IsConfigured() bool {
 
 func (c *Config) GetModel(provider, model string) *catwalk.Model {
 	if providerConfig, ok := c.Providers.Get(provider); ok {
-		for _, m := range providerConfig.Models {
-			if m.ID == model {
-				return &m
+		for i := range providerConfig.Models {
+			if providerConfig.Models[i].ID == model {
+				return &providerConfig.Models[i]
 			}
 		}
 	}

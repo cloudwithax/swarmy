@@ -675,14 +675,14 @@ func (c *coordinator) buildAgentModels(ctx context.Context, isSubAgent bool) (Mo
 	var largeCatwalkModel *catwalk.Model
 	var smallCatwalkModel *catwalk.Model
 
-	for _, m := range largeProviderCfg.Models {
-		if m.ID == largeModelCfg.Model {
-			largeCatwalkModel = &m
+	for i := range largeProviderCfg.Models {
+		if largeProviderCfg.Models[i].ID == largeModelCfg.Model {
+			largeCatwalkModel = &largeProviderCfg.Models[i]
 		}
 	}
-	for _, m := range smallProviderCfg.Models {
-		if m.ID == smallModelCfg.Model {
-			smallCatwalkModel = &m
+	for i := range smallProviderCfg.Models {
+		if smallProviderCfg.Models[i].ID == smallModelCfg.Model {
+			smallCatwalkModel = &smallProviderCfg.Models[i]
 		}
 	}
 
