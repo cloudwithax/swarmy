@@ -158,18 +158,18 @@ func CurrentPlatform() Platform {
 		arch = "i386"
 	}
 
-	// Normalize OS names.
+	// Normalize OS names to lowercase to match GoReleaser asset naming.
 	switch os {
 	case "darwin":
-		os = "Darwin"
+		os = "darwin"
 	case "linux":
-		os = "Linux"
+		os = "linux"
 	case "windows":
-		os = "Windows"
+		os = "windows"
 	case "freebsd":
-		os = "FreeBSD"
+		os = "freebsd"
 	case "openbsd":
-		os = "OpenBSD"
+		os = "openbsd"
 	}
 
 	return Platform{OS: os, Arch: arch}
@@ -178,7 +178,7 @@ func CurrentPlatform() Platform {
 // AssetName returns the expected asset name for this platform.
 func (p Platform) AssetName(version string) string {
 	ext := "tar.gz"
-	if p.OS == "Windows" {
+	if p.OS == "windows" {
 		ext = "zip"
 	}
 	return fmt.Sprintf("swarmy_%s_%s_%s.%s", version, p.OS, p.Arch, ext)
@@ -186,7 +186,7 @@ func (p Platform) AssetName(version string) string {
 
 // BinaryName returns the binary name for this platform.
 func (p Platform) BinaryName() string {
-	if p.OS == "Windows" {
+	if p.OS == "windows" {
 		return windowsBinaryName
 	}
 	return binaryName
@@ -194,7 +194,7 @@ func (p Platform) BinaryName() string {
 
 // IsWindows returns true if the platform is Windows.
 func (p Platform) IsWindows() bool {
-	return p.OS == "Windows"
+	return p.OS == "windows"
 }
 
 // NightlyChecker handles checking for nightly releases.

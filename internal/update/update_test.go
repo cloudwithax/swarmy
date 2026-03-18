@@ -57,27 +57,27 @@ func TestPlatform_AssetName(t *testing.T) {
 	}{
 		{
 			name:     "Linux amd64",
-			platform: Platform{OS: "Linux", Arch: "x86_64"},
+			platform: Platform{OS: "linux", Arch: "x86_64"},
 			version:  "v1.0.0",
-			want:     "swarmy_v1.0.0_Linux_x86_64.tar.gz",
+			want:     "swarmy_v1.0.0_linux_x86_64.tar.gz",
 		},
 		{
 			name:     "Darwin arm64",
-			platform: Platform{OS: "Darwin", Arch: "arm64"},
+			platform: Platform{OS: "darwin", Arch: "arm64"},
 			version:  "nightly-20240315",
-			want:     "swarmy_nightly-20240315_Darwin_arm64.tar.gz",
+			want:     "swarmy_nightly-20240315_darwin_arm64.tar.gz",
 		},
 		{
 			name:     "Windows x86_64",
-			platform: Platform{OS: "Windows", Arch: "x86_64"},
+			platform: Platform{OS: "windows", Arch: "x86_64"},
 			version:  "v1.0.0",
-			want:     "swarmy_v1.0.0_Windows_x86_64.zip",
+			want:     "swarmy_v1.0.0_windows_x86_64.zip",
 		},
 		{
 			name:     "FreeBSD i386",
-			platform: Platform{OS: "FreeBSD", Arch: "i386"},
+			platform: Platform{OS: "freebsd", Arch: "i386"},
 			version:  "v1.0.0",
-			want:     "swarmy_v1.0.0_FreeBSD_i386.tar.gz",
+			want:     "swarmy_v1.0.0_freebsd_i386.tar.gz",
 		},
 	}
 
@@ -97,12 +97,12 @@ func TestPlatform_BinaryName(t *testing.T) {
 	}{
 		{
 			name:     "Unix binary",
-			platform: Platform{OS: "Linux", Arch: "x86_64"},
+			platform: Platform{OS: "linux", Arch: "x86_64"},
 			want:     "swarmy",
 		},
 		{
 			name:     "Windows binary",
-			platform: Platform{OS: "Windows", Arch: "x86_64"},
+			platform: Platform{OS: "windows", Arch: "x86_64"},
 			want:     "swarmy.exe",
 		},
 	}
@@ -123,17 +123,17 @@ func TestPlatform_IsWindows(t *testing.T) {
 	}{
 		{
 			name:     "Linux is not Windows",
-			platform: Platform{OS: "Linux", Arch: "x86_64"},
+			platform: Platform{OS: "linux", Arch: "x86_64"},
 			want:     false,
 		},
 		{
 			name:     "Windows is Windows",
-			platform: Platform{OS: "Windows", Arch: "x86_64"},
+			platform: Platform{OS: "windows", Arch: "x86_64"},
 			want:     true,
 		},
 		{
 			name:     "macOS is not Windows",
-			platform: Platform{OS: "Darwin", Arch: "arm64"},
+			platform: Platform{OS: "darwin", Arch: "arm64"},
 			want:     false,
 		},
 	}
