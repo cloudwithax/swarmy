@@ -99,9 +99,9 @@ type coordinator struct {
 
 // tokenBucket implements a simple token bucket rate limiter.
 type tokenBucket struct {
-	tokens    float64
+	tokens     float64
 	lastRefill time.Time
-	mu        sync.Mutex
+	mu         sync.Mutex
 	// rate is the number of tokens added per second.
 	rate float64
 	// capacity is the maximum number of tokens (bucket size).
@@ -1056,8 +1056,17 @@ func (c *coordinator) Summarize(ctx context.Context, sessionID string) error {
 }
 
 func (c *coordinator) isUnauthorized(err error) bool {
+	if err == nil {
+		return false
+	}
 	var providerErr *fantasy.ProviderError
-	return errors.As(err, &providerErr) && providerErr.StatusCode == http.StatusUnauthorized
+	if errors.As(err, &providerErr) && providerErr.StatusCode == http.StatusUnauthorized {
+		return true
+	}
+	// Also check error message for unauthorized indicators
+	// Some providers (like opencode-go) return errors that aren't wrapped as ProviderError
+	errStr := strings.ToLower(err.Error())
+	return strings.Contains(errStr, "unauthorized") || strings.Contains(errStr, "token expired")
 }
 
 // isRateLimitError checks if the error is a rate limit (429) error.
@@ -1187,6 +1196,24 @@ func (c *coordinator) refreshApiKeyTemplate(ctx context.Context, providerCfg con
 	return nil
 }
 
+// refreshAPIKey re-resolves the API key from the APIKey field (for providers like opencode-go
+// that store the template in APIKey instead of APIKeyTemplate).
+func (c *coordinator) refreshAPIKey(ctx context.Context, providerCfg config.ProviderConfig) error {
+	newAPIKey, err := c.cfg.Resolve(providerCfg.APIKey)
+	if err != nil {
+		slog.Error("Failed to re-resolve API key after 401 error", "provider", providerCfg.ID, "error", err)
+		return err
+	}
+
+	providerCfg.APIKey = newAPIKey
+	c.cfg.Providers.Set(providerCfg.ID, providerCfg)
+
+	if err := c.UpdateModels(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
 // subAgentParams holds the parameters for running a sub-agent.
 type subAgentParams struct {
 	Agent          SessionAgent
@@ -1228,19 +1255,67 @@ func (c *coordinator) runSubAgent(ctx context.Context, params subAgentParams) (f
 		return fantasy.ToolResponse{}, errModelProviderNotConfigured
 	}
 
+	run := func() (*fantasy.AgentResult, error) {
+		return params.Agent.Run(ctx, SessionAgentCall{
+			SessionID:        session.ID,
+			Prompt:           params.Prompt,
+			MaxOutputTokens:  maxTokens,
+			ProviderOptions:  getProviderOptions(model, providerCfg),
+			Temperature:      model.ModelCfg.Temperature,
+			TopP:             model.ModelCfg.TopP,
+			TopK:             model.ModelCfg.TopK,
+			FrequencyPenalty: model.ModelCfg.FrequencyPenalty,
+			PresencePenalty:  model.ModelCfg.PresencePenalty,
+			NonInteractive:   true,
+		})
+	}
+
 	// Run the agent
-	result, err := params.Agent.Run(ctx, SessionAgentCall{
-		SessionID:        session.ID,
-		Prompt:           params.Prompt,
-		MaxOutputTokens:  maxTokens,
-		ProviderOptions:  getProviderOptions(model, providerCfg),
-		Temperature:      model.ModelCfg.Temperature,
-		TopP:             model.ModelCfg.TopP,
-		TopK:             model.ModelCfg.TopK,
-		FrequencyPenalty: model.ModelCfg.FrequencyPenalty,
-		PresencePenalty:  model.ModelCfg.PresencePenalty,
-		NonInteractive:   true,
-	})
+	result, err := run()
+
+	// Handle unauthorized errors by refreshing token and retrying
+	if c.isUnauthorized(err) {
+		switch {
+		case providerCfg.OAuthToken != nil:
+			slog.Debug("Received 401 in sub-agent. Refreshing OAuth token and retrying", "provider", providerCfg.ID)
+			if refreshErr := c.refreshOAuth2Token(ctx, providerCfg); refreshErr != nil {
+				slog.Error("Failed to refresh OAuth token for sub-agent", "provider", providerCfg.ID, "error", refreshErr)
+				return fantasy.NewTextErrorResponse(fmt.Sprintf("error generating response: token refresh failed: %v", refreshErr)), nil
+			}
+			slog.Debug("Retrying sub-agent request with refreshed OAuth token", "provider", providerCfg.ID)
+			result, err = run()
+		case strings.Contains(providerCfg.APIKeyTemplate, "$"):
+			slog.Debug("Received 401 in sub-agent. Refreshing API Key template and retrying", "provider", providerCfg.ID)
+			if err := c.refreshApiKeyTemplate(ctx, providerCfg); err != nil {
+				return fantasy.NewTextErrorResponse(fmt.Sprintf("error generating response: %v", err)), nil
+			}
+			slog.Debug("Retrying sub-agent request with refreshed API key", "provider", providerCfg.ID)
+			result, err = run()
+		case strings.Contains(providerCfg.APIKey, "$"):
+			// Some providers (like opencode-go) store the API key template in APIKey field
+			slog.Debug("Received 401 in sub-agent. Refreshing API Key and retrying", "provider", providerCfg.ID)
+			if err := c.refreshAPIKey(ctx, providerCfg); err != nil {
+				return fantasy.NewTextErrorResponse(fmt.Sprintf("error generating response: %v", err)), nil
+			}
+			slog.Debug("Retrying sub-agent request with refreshed API key", "provider", providerCfg.ID)
+			result, err = run()
+		default:
+			// No refresh mechanism available for this provider
+			// Try to fallback to the large model
+			slog.Debug("No token refresh available for sub-agent, attempting fallback to large model", "provider", providerCfg.ID)
+			result, err = c.fallbackToLargeModel(ctx, params, session.ID)
+			if err == nil {
+				// Success with fallback
+				if err := c.updateParentSessionCost(ctx, session.ID, params.SessionID); err != nil {
+					return fantasy.ToolResponse{}, err
+				}
+				return fantasy.NewTextResponse(result.Response.Content.Text()), nil
+			}
+			// Fallback also failed, return original error
+			return fantasy.NewTextErrorResponse(fmt.Sprintf("error generating response: unauthorized error for provider %s (no refresh mechanism)", providerCfg.ID)), nil
+		}
+	}
+
 	if err != nil {
 		return fantasy.NewTextErrorResponse(fmt.Sprintf("error generating response: %v", err)), nil
 	}
@@ -1251,6 +1326,52 @@ func (c *coordinator) runSubAgent(ctx context.Context, params subAgentParams) (f
 	}
 
 	return fantasy.NewTextResponse(result.Response.Content.Text()), nil
+}
+
+// fallbackToLargeModel attempts to run the sub-agent with the large model
+// when the small model fails with an unauthorized error.
+func (c *coordinator) fallbackToLargeModel(ctx context.Context, params subAgentParams, sessionID string) (*fantasy.AgentResult, error) {
+	// Get both large and small models
+	large, _, err := c.buildAgentModels(ctx, true)
+	if err != nil {
+		slog.Debug("Failed to build large model for fallback", "error", err)
+		return nil, err
+	}
+
+	currentModel := params.Agent.Model()
+	if large.ModelCfg.Provider == currentModel.ModelCfg.Provider {
+		// Large model uses the same provider, fallback won't help
+		slog.Debug("Large model uses same provider as small model, skipping fallback", "provider", large.ModelCfg.Provider)
+		return nil, fmt.Errorf("large model uses same provider")
+	}
+
+	slog.Info("Falling back to large model for sub-agent", "from_provider", currentModel.ModelCfg.Provider, "to_provider", large.ModelCfg.Provider)
+
+	// Update the agent to use the large model
+	params.Agent.SetModels(large, large)
+
+	maxTokens := large.CatwalkCfg.DefaultMaxTokens
+	if large.ModelCfg.MaxTokens != 0 {
+		maxTokens = large.ModelCfg.MaxTokens
+	}
+
+	largeProviderCfg, ok := c.cfg.Providers.Get(large.ModelCfg.Provider)
+	if !ok {
+		return nil, fmt.Errorf("large model provider not configured")
+	}
+
+	return params.Agent.Run(ctx, SessionAgentCall{
+		SessionID:        sessionID,
+		Prompt:           params.Prompt,
+		MaxOutputTokens:  maxTokens,
+		ProviderOptions:  getProviderOptions(large, largeProviderCfg),
+		Temperature:      large.ModelCfg.Temperature,
+		TopP:             large.ModelCfg.TopP,
+		TopK:             large.ModelCfg.TopK,
+		FrequencyPenalty: large.ModelCfg.FrequencyPenalty,
+		PresencePenalty:  large.ModelCfg.PresencePenalty,
+		NonInteractive:   true,
+	})
 }
 
 // updateParentSessionCost accumulates the cost from a child session to its parent session.
