@@ -690,11 +690,7 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 
 	a.updateSessionUsage(largeModel, &currentSession, resp.TotalUsage, openrouterCost)
 
-	// Just in case, get just the last usage info.
-	usage := resp.Response.Usage
 	currentSession.SummaryMessageID = summaryMessage.ID
-	currentSession.CompletionTokens = usage.OutputTokens
-	currentSession.PromptTokens = 0
 	_, err = a.sessions.Save(genCtx, currentSession)
 	return err
 }
@@ -941,8 +937,8 @@ func (a *sessionAgent) updateSessionUsage(model Model, session *session.Session,
 		session.Cost += cost
 	}
 
-	session.CompletionTokens = usage.OutputTokens
-	session.PromptTokens = usage.InputTokens + usage.CacheReadTokens
+	session.CompletionTokens += usage.OutputTokens
+	session.PromptTokens += usage.InputTokens + usage.CacheReadTokens
 }
 
 func (a *sessionAgent) Cancel(sessionID string) {
