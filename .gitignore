@@ -52,4 +52,5 @@ completions/swarmy.*sh
 .prettierignore
 .task
 
-/scripts
+/scripts/*.py
+/scripts/*.sh
