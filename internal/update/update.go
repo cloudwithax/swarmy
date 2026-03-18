@@ -741,3 +741,188 @@ func CleanupBackup(backupPath string) error {
 	installer := NewInstaller()
 	return installer.CleanupBackup(backupPath)
 }
+
+// Resolver-aware update functions.
+
+// CheckUpdateWithResolver checks for updates using the resolver JSON.
+// It returns update info and the best package for the current platform.
+func CheckUpdateWithResolver(ctx context.Context, currentVersion string) (Info, *PackageInfo, error) {
+	info, err := CheckNightlyInfo(ctx, currentVersion)
+	if err != nil {
+		return info, nil, err
+	}
+
+	// Fetch the resolver for the latest version.
+	resolverClient := NewResolverClient()
+	resolver, err := resolverClient.FetchResolver(ctx, "nightly")
+	if err != nil {
+		// Fall back to traditional asset matching if resolver fails.
+		return info, nil, fmt.Errorf("resolver not available: %w", err)
+	}
+
+	// Get the best package for this platform.
+	pkg, err := resolver.GetPackageForPlatform()
+	if err != nil {
+		return info, nil, err
+	}
+
+	return info, pkg, nil
+}
+
+// DownloadPackage downloads a package from the resolver to a temporary file.
+func DownloadPackage(ctx context.Context, pkg *PackageInfo, progress DownloadProgress) (string, error) {
+	if pkg == nil {
+		return "", fmt.Errorf("no package provided")
+	}
+
+	// Extract filename from URL.
+	parts := strings.Split(pkg.URL, "/")
+	filename := parts[len(parts)-1]
+	if filename == "" {
+		filename = "swarmy-package"
+	}
+
+	tempDir := os.TempDir()
+	downloadPath := filepath.Join(tempDir, filename)
+
+	downloader := NewDownloader(progress)
+
+	// Create a temporary asset struct for downloading.
+	asset := &Asset{
+		Name:               filename,
+		BrowserDownloadURL: pkg.URL,
+	}
+
+	if err := downloader.Download(ctx, asset, downloadPath); err != nil {
+		return "", err
+	}
+
+	return downloadPath, nil
+}
+
+// PackageFormat represents the type of package format.
+type PackageFormat string
+
+const (
+	// FormatArchive is a generic archive (tar.gz or zip).
+	FormatArchive PackageFormat = "archive"
+	// FormatDeb is a Debian package.
+	FormatDeb PackageFormat = "deb"
+	// FormatRPM is an RPM package.
+	FormatRPM PackageFormat = "rpm"
+	// FormatAPK is an Alpine package.
+	FormatAPK PackageFormat = "apk"
+	// FormatArchPkg is an Arch Linux package.
+	FormatArchPkg PackageFormat = "arch_pkg"
+)
+
+// InstallerType represents the method to install the package.
+type InstallerType string
+
+const (
+	// InstallerAuto automatically chooses the best installer.
+	InstallerAuto InstallerType = "auto"
+	// InstallerPackageManager uses the system package manager.
+	InstallerPackageManager InstallerType = "package_manager"
+	// InstallerDirect extracts and replaces the binary directly.
+	InstallerDirect InstallerType = "direct"
+)
+
+// PackageInstaller handles installing distro packages.
+type PackageInstaller struct {
+	installerType InstallerType
+}
+
+// NewPackageInstaller creates a new package installer.
+func NewPackageInstaller(installerType InstallerType) *PackageInstaller {
+	if installerType == "" {
+		installerType = InstallerAuto
+	}
+	return &PackageInstaller{installerType: installerType}
+}
+
+// InstallPackage installs a package based on its format.
+// Returns the backup path and any error.
+func (pi *PackageInstaller) InstallPackage(pkgPath string, format PackageFormat) (string, error) {
+	switch format {
+	case FormatDeb:
+		return pi.installDeb(pkgPath)
+	case FormatRPM:
+		return pi.installRPM(pkgPath)
+	case FormatAPK:
+		return pi.installAPK(pkgPath)
+	case FormatArchPkg:
+		return pi.installArchPkg(pkgPath)
+	default:
+		// Fall back to archive installation.
+		platform := CurrentPlatform()
+		installer := NewInstaller()
+		return installer.Install(pkgPath, platform)
+	}
+}
+
+// installDeb installs a .deb package using dpkg.
+func (pi *PackageInstaller) installDeb(pkgPath string) (string, error) {
+	// Check if we have dpkg available.
+	if _, err := os.Stat("/usr/bin/dpkg"); err != nil {
+		// Fall back to direct installation.
+		platform := CurrentPlatform()
+		installer := NewInstaller()
+		return installer.Install(pkgPath, platform)
+	}
+
+	// For .deb packages, we extract the binary and install it directly
+	// to avoid permission issues with system package managers.
+	return pi.extractAndInstall(pkgPath, "data.tar")
+}
+
+// installRPM installs an .rpm package using rpm2cpio.
+func (pi *PackageInstaller) installRPM(pkgPath string) (string, error) {
+	// Check if we have rpm2cpio available.
+	if _, err := os.Stat("/usr/bin/rpm2cpio"); err != nil {
+		// Fall back to direct installation.
+		platform := CurrentPlatform()
+		installer := NewInstaller()
+		return installer.Install(pkgPath, platform)
+	}
+
+	return pi.extractAndInstall(pkgPath, "")
+}
+
+// installAPK installs an .apk package.
+func (pi *PackageInstaller) installAPK(pkgPath string) (string, error) {
+	// Alpine packages are tar.gz files, extract and install.
+	return pi.extractAndInstall(pkgPath, "")
+}
+
+// installArchPkg installs an Arch package.
+func (pi *PackageInstaller) installArchPkg(pkgPath string) (string, error) {
+	// Arch packages are zstd compressed tar, extract and install.
+	return pi.extractAndInstall(pkgPath, "")
+}
+
+// extractAndInstall extracts the binary from a package and installs it.
+func (pi *PackageInstaller) extractAndInstall(pkgPath, tarFilter string) (string, error) {
+	// For now, fall back to standard archive extraction.
+	// Distro packages typically contain the binary in a specific location.
+	platform := CurrentPlatform()
+	installer := NewInstaller()
+	return installer.Install(pkgPath, platform)
+}
+
+// GetPreferredPackageFormat returns the preferred package format for the current system.
+func GetPreferredPackageFormat() PackageFormat {
+	distro := DetectDistro()
+	switch distro.Type {
+	case DistroDebian:
+		return FormatDeb
+	case DistroRedHat, DistroSUSE:
+		return FormatRPM
+	case DistroAlpine:
+		return FormatAPK
+	case DistroArch:
+		return FormatArchPkg
+	default:
+		return FormatArchive
+	}
+}

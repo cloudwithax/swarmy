@@ -62,6 +62,15 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	// Show current version and platform info.
 	fmt.Printf("Current version: %s\n", version.Version)
 	fmt.Printf("Platform: %s/%s\n", runtime.GOOS, runtime.GOARCH)
+
+	// Show distro info on Linux.
+	if runtime.GOOS == "linux" {
+		distro := update.DetectDistro()
+		if distro.Type != update.DistroUnknown {
+			fmt.Printf("Distribution: %s\n", distro)
+			fmt.Printf("Preferred package: %s\n", update.GetPreferredPackageFormat())
+		}
+	}
 	fmt.Println()
 
 	// Check for updates.
