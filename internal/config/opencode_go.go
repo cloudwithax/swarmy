@@ -16,7 +16,7 @@ func OpenCodeGoProvider() catwalk.Provider {
 		APIEndpoint:         "https://opencode.ai/zen/go/v1",
 		Type:                "openai-compat",
 		DefaultLargeModelID: "kimi-k2.5",
-		DefaultSmallModelID: "minimax-m2.5",
+		DefaultSmallModelID: "minimax-m2.7",
 		Models:              openCodeGoModels(),
 		DefaultHeaders:      map[string]string{},
 	}
@@ -54,6 +54,16 @@ func openCodeGoModels() []catwalk.Model {
 			ContextWindow:    100000,
 			DefaultMaxTokens: 8192,
 			CanReason:        false,
+			SupportsImages:   false,
+		},
+		{
+			ID:               "minimax-m2.7",
+			Name:             "MiniMax M2.7",
+			CostPer1MIn:      0.3,
+			CostPer1MOut:     1.2,
+			ContextWindow:    204800,
+			DefaultMaxTokens: 131072,
+			CanReason:        true,
 			SupportsImages:   false,
 		},
 	}

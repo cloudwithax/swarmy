@@ -331,6 +331,16 @@ func openCodeZenModels() []catwalk.Model {
 			CanReason:        true,
 			SupportsImages:   false,
 		},
+		{
+			ID:               "minimax-m2.7",
+			Name:             "MiniMax M2.7",
+			CostPer1MIn:      0.3,
+			CostPer1MOut:     1.2,
+			ContextWindow:    204800,
+			DefaultMaxTokens: 131072,
+			CanReason:        true,
+			SupportsImages:   false,
+		},
 		// Kimi Models
 		{
 			ID:               "kimi-k2.5",
