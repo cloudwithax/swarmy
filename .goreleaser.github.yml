@@ -32,13 +32,6 @@ builds:
     goarch:
       - amd64
       - arm64
-      - "386"
-      - arm
-    goarm:
-      - "7"
-    ignore:
-      - goos: windows
-        goarch: arm
     ldflags:
       - -s -w -X github.com/cloudwithax/swarmy/internal/version.Version={{.Version}}
     flags:
@@ -51,9 +44,7 @@ archives:
       {{- .Version }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
-      {{- with .Arm}}v{{ . }}{{ end }}
     wrap_in_directory: true
     files:
       - README*
