@@ -184,11 +184,9 @@ func CurrentPlatform() Platform {
 // AssetName returns the expected asset name for this platform.
 func (p Platform) AssetName(version string) string {
 	ext := "tar.gz"
-	if p.OS == "Windows" {
+	if p.OS == "windows" {
 		ext = "zip"
 	}
-	// Remove "v" prefix if present - GoReleaser asset names don't include it
-	version = strings.TrimPrefix(version, "v")
 	return fmt.Sprintf("swarmy_%s_%s_%s.%s", version, p.OS, p.Arch, ext)
 }
 
