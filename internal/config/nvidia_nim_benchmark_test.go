@@ -253,11 +253,11 @@ func TestNvidiaNIMModelConfigurationComplete(t *testing.T) {
 	provider := NvidiaNimProvider()
 
 	tests := []struct {
-		name           string
-		modelID        string
-		wantImages     bool
-		wantReasoning  bool
-		minContextWin  int64
+		name          string
+		modelID       string
+		wantImages    bool
+		wantReasoning bool
+		minContextWin int64
 	}{
 		// Text-only models
 		{"glm4.7", "z-ai/glm4.7", false, true, 64000},

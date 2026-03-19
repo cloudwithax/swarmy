@@ -190,7 +190,18 @@ func Providers(cfg *Config) ([]catwalk.Provider, error) {
 
 		// Add built-in providers that are not part of catwalk.
 		if !customProvidersOnly {
-			providerList = append(providerList, OpenCodeZenProvider(), OpenCodeGoProvider(), NvidiaNimProvider())
+			providerList = append(providerList,
+				OpenCodeZenProvider(),
+				OpenCodeGoProvider(),
+				NvidiaNimProvider(),
+				XAIProvider(),
+				GroqProvider(),
+				CerebrasProvider(),
+				TogetherProvider(),
+				DeepInfraProvider(),
+				PerplexityProvider(),
+				CloudflareProvider(),
+			)
 		}
 
 		providerErr = errors.Join(errs...)
