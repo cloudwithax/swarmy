@@ -1,6 +1,6 @@
 module github.com/cloudwithax/swarmy
 
-go 1.26.1
+go 1.23
 
 require (
 	charm.land/bubbles/v2 v2.0.0

@@ -704,6 +704,38 @@ func DownloadToTemp(ctx context.Context, progress DownloadProgress) (string, err
 	return archivePath, nil
 }
 
+// DownloadPackageToTemp downloads a package to a temporary file and returns the path.
+// This works with the resolver-based package info for private repos.
+func DownloadPackageToTemp(ctx context.Context, pkg *PackageInfo, progress DownloadProgress) (string, error) {
+	if pkg == nil {
+		return "", fmt.Errorf("no package provided")
+	}
+
+	// Extract filename from URL.
+	parts := strings.Split(pkg.URL, "/")
+	filename := parts[len(parts)-1]
+	if filename == "" {
+		filename = "swarmy-package"
+	}
+
+	tempDir := os.TempDir()
+	downloadPath := filepath.Join(tempDir, filename)
+
+	downloader := NewDownloader(progress)
+
+	// Create a temporary asset struct for downloading.
+	asset := &Asset{
+		Name:               filename,
+		BrowserDownloadURL: pkg.URL,
+	}
+
+	if err := downloader.Download(ctx, asset, downloadPath); err != nil {
+		return "", err
+	}
+
+	return downloadPath, nil
+}
+
 // Install is a convenience function that installs an update.
 func Install(archivePath string, platform Platform) (string, error) {
 	installer := NewInstaller()
@@ -746,25 +778,36 @@ func CleanupBackup(backupPath string) error {
 
 // CheckUpdateWithResolver checks for updates using the resolver JSON.
 // It returns update info and the best package for the current platform.
+// This function works for private repositories where GitHub API returns 404.
 func CheckUpdateWithResolver(ctx context.Context, currentVersion string) (Info, *PackageInfo, error) {
-	info, err := CheckNightlyInfo(ctx, currentVersion)
-	if err != nil {
-		return info, nil, err
+	info := Info{
+		Current:   currentVersion,
+		Latest:    currentVersion,
+		IsNightly: true,
 	}
 
-	// Fetch the resolver for the latest version.
+	// Fetch the resolver for the nightly version first.
+	// This works for private repos since it uses release assets, not the API.
 	resolverClient := NewResolverClient()
 	resolver, err := resolverClient.FetchResolver(ctx, "nightly")
 	if err != nil {
-		// Fall back to traditional asset matching if resolver fails.
-		return info, nil, fmt.Errorf("resolver not available: %w", err)
+		// Resolver failed, try GitHub API as fallback.
+		info, apiErr := CheckNightlyInfo(ctx, currentVersion)
+		if apiErr != nil {
+			return info, nil, fmt.Errorf("both resolver and GitHub API failed: resolver: %w, api: %v", err, apiErr)
+		}
+		return info, nil, nil
 	}
 
 	// Get the best package for this platform.
 	pkg, err := resolver.GetPackageForPlatform()
 	if err != nil {
-		return info, nil, err
+		return info, nil, fmt.Errorf("resolver found but no package for platform: %w", err)
 	}
+
+	// Use resolver version info.
+	info.Latest = resolver.Release
+	info.URL = fmt.Sprintf("https://github.com/cloudwithax/swarmy/releases/tag/%s", resolver.Release)
 
 	return info, pkg, nil
 }

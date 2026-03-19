@@ -48,6 +48,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	nightly, _ := cmd.Flags().GetBool("nightly")
 	force, _ := cmd.Flags().GetBool("force")
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
+	useResolver := true // Default to using resolver for private repo support
 
 	// Cancel on SIGINT or SIGTERM.
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
@@ -75,11 +76,23 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 	// Check for updates.
 	var info update.Info
+	var pkg *update.PackageInfo
 	var err error
 
 	if nightly {
 		fmt.Println("Checking for latest nightly release...")
-		info, err = update.CheckNightlyInfo(ctx, version.Version)
+		if useResolver {
+			// Use resolver-aware check which works for private repos
+			info, pkg, err = update.CheckUpdateWithResolver(ctx, version.Version)
+			if err != nil {
+				// Fall back to traditional check if resolver fails
+				fmt.Println("Resolver check failed, falling back to GitHub API...")
+				info, err = update.CheckNightlyInfo(ctx, version.Version)
+				pkg = nil
+			}
+		} else {
+			info, err = update.CheckNightlyInfo(ctx, version.Version)
+		}
 	} else {
 		fmt.Println("Checking for latest stable release...")
 		info, err = update.Check(ctx, version.Version, update.Default)
@@ -111,15 +124,23 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		fmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color("#73A2F5")).Render("→ Dry run mode: no changes will be made"))
 		fmt.Println()
 		fmt.Println("Would download and install:")
-		fmt.Printf("  Asset: %s\n", update.GetAssetName())
+		if pkg != nil {
+			fmt.Printf("  Package: %s\n", pkg.URL)
+		} else {
+			fmt.Printf("  Asset: %s\n", update.GetAssetName())
+		}
 		binaryPath, _ := update.GetBinaryPath()
 		fmt.Printf("  Target: %s\n", binaryPath)
 		return nil
 	}
 
 	// Find the correct asset for this platform.
-	assetName := update.GetAssetName()
-	fmt.Printf("Target asset: %s\n", assetName)
+	if pkg != nil {
+		fmt.Printf("Target package: %s\n", pkg.URL)
+	} else {
+		assetName := update.GetAssetName()
+		fmt.Printf("Target asset: %s\n", assetName)
+	}
 	fmt.Println()
 
 	// Download the update.
@@ -139,7 +160,14 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	updatePath, err := update.DownloadToTemp(ctx, progressFn)
+	var updatePath string
+	if pkg != nil {
+		// Use resolver package download
+		updatePath, err = update.DownloadPackageToTemp(ctx, pkg, progressFn)
+	} else {
+		// Fall back to traditional asset download
+		updatePath, err = update.DownloadToTemp(ctx, progressFn)
+	}
 	if err != nil {
 		fmt.Println() // Clear the progress line.
 		return fmt.Errorf("failed to download update: %w", err)
