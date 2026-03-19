@@ -150,7 +150,9 @@ func CurrentPlatform() Platform {
 	os := runtime.GOOS
 	arch := runtime.GOARCH
 
-	// Normalize architecture names to match GoReleaser conventions.
+	// Normalize architecture names.
+	// GoReleaser uses "x86_64" for amd64 in archive names (tar.gz)
+	// but "amd64" in package names (.deb, .rpm)
 	switch arch {
 	case "amd64":
 		arch = "x86_64"
@@ -158,18 +160,22 @@ func CurrentPlatform() Platform {
 		arch = "i386"
 	}
 
-	// Normalize OS names to lowercase to match GoReleaser asset naming.
+	// Normalize OS names to Title case to match GoReleaser archive naming.
+	// GoReleaser uses Title case (Darwin, Linux, Windows) for archives
+	// but lowercase for package files (.deb, .rpm)
 	switch os {
 	case "darwin":
-		os = "darwin"
+		os = "Darwin"
 	case "linux":
-		os = "linux"
+		os = "Linux"
 	case "windows":
-		os = "windows"
+		os = "Windows"
 	case "freebsd":
-		os = "freebsd"
+		os = "Freebsd"
 	case "openbsd":
-		os = "openbsd"
+		os = "Openbsd"
+	case "netbsd":
+		os = "Netbsd"
 	}
 
 	return Platform{OS: os, Arch: arch}
@@ -178,9 +184,11 @@ func CurrentPlatform() Platform {
 // AssetName returns the expected asset name for this platform.
 func (p Platform) AssetName(version string) string {
 	ext := "tar.gz"
-	if p.OS == "windows" {
+	if p.OS == "Windows" {
 		ext = "zip"
 	}
+	// Remove "v" prefix if present - GoReleaser asset names don't include it
+	version = strings.TrimPrefix(version, "v")
 	return fmt.Sprintf("swarmy_%s_%s_%s.%s", version, p.OS, p.Arch, ext)
 }
 
