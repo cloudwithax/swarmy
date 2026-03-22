@@ -49,6 +49,9 @@ func TestCoderAgent(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping on windows for now")
 	}
+	if os.Getenv("SWARMY_TEST_INTEGRATION") == "" {
+		t.Skip("skipping integration tests; set SWARMY_TEST_INTEGRATION=1 to run")
+	}
 
 	for _, pair := range modelPairs {
 		t.Run(pair.name, func(t *testing.T) {
