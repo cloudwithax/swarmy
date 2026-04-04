@@ -172,10 +172,6 @@ func CurrentPlatform() Platform {
 		os = "Windows"
 	case "freebsd":
 		os = "Freebsd"
-	case "openbsd":
-		os = "Openbsd"
-	case "netbsd":
-		os = "Netbsd"
 	}
 
 	return Platform{OS: os, Arch: arch}

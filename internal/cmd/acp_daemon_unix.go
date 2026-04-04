@@ -1,4 +1,4 @@
-//go:build linux || darwin || freebsd || openbsd || netbsd
+//go:build linux || darwin || freebsd
 
 package cmd
 

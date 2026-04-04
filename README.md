@@ -34,7 +34,7 @@
 - **LSP-Enhanced:** uses LSPs for additional context, just like you do
 - **Extensible:** add capabilities via MCPs (`http`, `stdio`, and `sse`)
 - **Headless ACP:** expose Swarmy over ACP so external orchestrators can discover and run it without the TUI
-- **Works Everywhere:** macOS, Linux, Windows (PowerShell and WSL), Android, FreeBSD, OpenBSD, and NetBSD
+- **Works Everywhere:** macOS, Linux, Windows (PowerShell and WSL), Android, and FreeBSD
 
 ## Installation
 
