@@ -136,6 +136,16 @@ func apertisAIModels() []catwalk.Model {
 			CanReason:        true,
 			SupportsImages:   false,
 		},
+		{
+			ID:               "o4-mini-deep-research",
+			Name:             "o4 Mini Deep Research",
+			CostPer1MIn:      1.1,
+			CostPer1MOut:     4.4,
+			ContextWindow:    200000,
+			DefaultMaxTokens: 100000,
+			CanReason:        true,
+			SupportsImages:   false,
+		},
 
 		// Anthropic Claude models
 		{
@@ -347,6 +357,16 @@ func apertisAIModels() []catwalk.Model {
 
 		// DeepSeek models
 		{
+			ID:               "deepseek-v4",
+			Name:             "DeepSeek V4",
+			CostPer1MIn:      0.5,
+			CostPer1MOut:     2.0,
+			ContextWindow:    1000000,
+			DefaultMaxTokens: 8192,
+			CanReason:        true,
+			SupportsImages:   true,
+		},
+		{
 			ID:               "deepseek-r1",
 			Name:             "DeepSeek R1",
 			CostPer1MIn:      0.5,
@@ -378,6 +398,66 @@ func apertisAIModels() []catwalk.Model {
 		},
 
 		// Qwen models
+		{
+			ID:               "qwen3.5-397b-a17b",
+			Name:             "Qwen3.5 397B A17B",
+			CostPer1MIn:      0.5,
+			CostPer1MOut:     2.0,
+			ContextWindow:    131072,
+			DefaultMaxTokens: 8192,
+			CanReason:        true,
+			SupportsImages:   true,
+		},
+		{
+			ID:               "qwen3.5-plus",
+			Name:             "Qwen3.5 Plus",
+			CostPer1MIn:      0.26,
+			CostPer1MOut:     1.56,
+			ContextWindow:    1000000,
+			DefaultMaxTokens: 8192,
+			CanReason:        false,
+			SupportsImages:   true,
+		},
+		{
+			ID:               "qwen3.5-flash",
+			Name:             "Qwen3.5 Flash",
+			CostPer1MIn:      0.05,
+			CostPer1MOut:     0.2,
+			ContextWindow:    131072,
+			DefaultMaxTokens: 8192,
+			CanReason:        false,
+			SupportsImages:   true,
+		},
+		{
+			ID:               "qwen3.5-35b-a3b",
+			Name:             "Qwen3.5 35B A3B",
+			CostPer1MIn:      0.1,
+			CostPer1MOut:     0.3,
+			ContextWindow:    131072,
+			DefaultMaxTokens: 8192,
+			CanReason:        true,
+			SupportsImages:   true,
+		},
+		{
+			ID:               "qwen3.5-122b-a10b",
+			Name:             "Qwen3.5 122B A10B",
+			CostPer1MIn:      0.2,
+			CostPer1MOut:     0.6,
+			ContextWindow:    131072,
+			DefaultMaxTokens: 8192,
+			CanReason:        false,
+			SupportsImages:   true,
+		},
+		{
+			ID:               "qwen3.5-omni",
+			Name:             "Qwen3.5 Omni",
+			CostPer1MIn:      0.5,
+			CostPer1MOut:     2.0,
+			ContextWindow:    131072,
+			DefaultMaxTokens: 8192,
+			CanReason:        true,
+			SupportsImages:   true,
+		},
 		{
 			ID:               "qwen3-235b-a22b",
 			Name:             "Qwen3 235B A22B",
@@ -429,6 +509,40 @@ func apertisAIModels() []catwalk.Model {
 			SupportsImages:   false,
 		},
 
+		// Xiaomi MiMo models
+		{
+			ID:               "mimo-v2-pro",
+			Name:             "MiMo V2 Pro",
+			CostPer1MIn:      0.3,
+			CostPer1MOut:     1.2,
+			ContextWindow:    131072,
+			DefaultMaxTokens: 8192,
+			CanReason:        true,
+			SupportsImages:   true,
+		},
+		{
+			ID:               "mimo-v2-flash",
+			Name:             "MiMo V2 Flash",
+			CostPer1MIn:      0.05,
+			CostPer1MOut:     0.2,
+			ContextWindow:    131072,
+			DefaultMaxTokens: 8192,
+			CanReason:        false,
+			SupportsImages:   true,
+		},
+
+		// ByteDance Seed models
+		{
+			ID:               "seed-2.0-mini",
+			Name:             "Seed 2.0 Mini",
+			CostPer1MIn:      0.05,
+			CostPer1MOut:     0.15,
+			ContextWindow:    131072,
+			DefaultMaxTokens: 8192,
+			CanReason:        false,
+			SupportsImages:   false,
+		},
+
 		// xAI Grok models
 		{
 			ID:               "grok-4",
@@ -463,6 +577,26 @@ func apertisAIModels() []catwalk.Model {
 
 		// MiniMax models
 		{
+			ID:               "minimax-m2.7",
+			Name:             "MiniMax M2.7",
+			CostPer1MIn:      0.3,
+			CostPer1MOut:     1.2,
+			ContextWindow:    204800,
+			DefaultMaxTokens: 8192,
+			CanReason:        true,
+			SupportsImages:   false,
+		},
+		{
+			ID:               "minimax-m2.5",
+			Name:             "MiniMax M2.5",
+			CostPer1MIn:      0.118,
+			CostPer1MOut:     1.0,
+			ContextWindow:    196608,
+			DefaultMaxTokens: 8192,
+			CanReason:        false,
+			SupportsImages:   false,
+		},
+		{
 			ID:               "minimax-m2.1",
 			Name:             "MiniMax M2.1",
 			CostPer1MIn:      0.2,
@@ -473,10 +607,72 @@ func apertisAIModels() []catwalk.Model {
 			SupportsImages:   false,
 		},
 
+		// Zhipu AI / Z.AI GLM models
+		{
+			ID:               "glm-5",
+			Name:             "GLM-5",
+			CostPer1MIn:      0.72,
+			CostPer1MOut:     2.3,
+			ContextWindow:    80000,
+			DefaultMaxTokens: 8192,
+			CanReason:        true,
+			SupportsImages:   false,
+		},
+		{
+			ID:               "glm-5-code",
+			Name:             "GLM-5 Code",
+			CostPer1MIn:      1.2,
+			CostPer1MOut:     5.0,
+			ContextWindow:    200000,
+			DefaultMaxTokens: 16384,
+			CanReason:        true,
+			SupportsImages:   false,
+		},
+		{
+			ID:               "glm-5-turbo",
+			Name:             "GLM-5 Turbo",
+			CostPer1MIn:      0.2,
+			CostPer1MOut:     0.6,
+			ContextWindow:    131072,
+			DefaultMaxTokens: 8192,
+			CanReason:        false,
+			SupportsImages:   false,
+		},
+		{
+			ID:               "glm-5v",
+			Name:             "GLM-5V",
+			CostPer1MIn:      0.72,
+			CostPer1MOut:     2.3,
+			ContextWindow:    80000,
+			DefaultMaxTokens: 8192,
+			CanReason:        true,
+			SupportsImages:   true,
+		},
+		{
+			ID:               "glm-5v-turbo",
+			Name:             "GLM-5V Turbo",
+			CostPer1MIn:      0.2,
+			CostPer1MOut:     0.6,
+			ContextWindow:    131072,
+			DefaultMaxTokens: 8192,
+			CanReason:        false,
+			SupportsImages:   true,
+		},
+
 		// Kimi models
 		{
 			ID:               "kimi-k2.5",
 			Name:             "Kimi K2.5",
+			CostPer1MIn:      0.5,
+			CostPer1MOut:     2.0,
+			ContextWindow:    131072,
+			DefaultMaxTokens: 8192,
+			CanReason:        true,
+			SupportsImages:   false,
+		},
+		{
+			ID:               "kimi-k2-0711-preview-search",
+			Name:             "Kimi K2 0711 Preview Search",
 			CostPer1MIn:      0.5,
 			CostPer1MOut:     2.0,
 			ContextWindow:    131072,
