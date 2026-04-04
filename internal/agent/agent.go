@@ -897,7 +897,7 @@ func (a *sessionAgent) generateTitle(ctx context.Context, sessionID string, user
 		cost = *openrouterCost
 	}
 
-	promptTokens := resp.TotalUsage.InputTokens + resp.TotalUsage.CacheCreationTokens
+	promptTokens := promptTokensForSessionUsage(resp.TotalUsage)
 	completionTokens := resp.TotalUsage.OutputTokens
 
 	// Atomically update only title and usage fields to avoid overriding other
@@ -922,6 +922,22 @@ func (a *sessionAgent) openrouterCost(metadata fantasy.ProviderMetadata) *float6
 	return &opts.Usage.Cost
 }
 
+// promptTokensForSessionUsage calculates prompt tokens for persisted session
+// usage and compaction accounting.
+//
+// When total tokens are available, they already represent prompt+completion for
+// a single request, so derive prompt tokens from total-output to avoid
+// double-counting cached-token subfields on OpenAI-compatible providers.
+//
+// When totals are unavailable, fall back to adding explicit cache components.
+func promptTokensForSessionUsage(usage fantasy.Usage) int64 {
+	if usage.TotalTokens > 0 && usage.TotalTokens >= usage.OutputTokens {
+		return usage.TotalTokens - usage.OutputTokens
+	}
+
+	return usage.InputTokens + usage.CacheCreationTokens + usage.CacheReadTokens
+}
+
 func (a *sessionAgent) updateSessionUsage(model Model, session *session.Session, usage fantasy.Usage, overrideCost *float64) {
 	modelConfig := model.CatwalkCfg
 	cost := modelConfig.CostPer1MInCached/1e6*float64(usage.CacheCreationTokens) +
@@ -938,7 +954,7 @@ func (a *sessionAgent) updateSessionUsage(model Model, session *session.Session,
 	}
 
 	session.CompletionTokens += usage.OutputTokens
-	session.PromptTokens += usage.InputTokens + usage.CacheReadTokens
+	session.PromptTokens += promptTokensForSessionUsage(usage)
 }
 
 func (a *sessionAgent) Cancel(sessionID string) {
