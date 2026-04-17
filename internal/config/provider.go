@@ -202,6 +202,7 @@ func Providers(cfg *Config) ([]catwalk.Provider, error) {
 				PerplexityProvider(),
 				CloudflareProvider(),
 				ApertisAIProvider(),
+				CrofAIProvider(),
 			)
 		}
 
