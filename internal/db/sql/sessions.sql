@@ -40,6 +40,8 @@ SET
     title = ?,
     prompt_tokens = ?,
     completion_tokens = ?,
+    context_prompt_tokens = ?,
+    context_completion_tokens = ?,
     summary_message_id = ?,
     cost = ?,
     todos = ?

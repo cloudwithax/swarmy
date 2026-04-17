@@ -202,4 +202,4 @@ require (
 	modernc.org/memory v1.11.0 // indirect
 )
 
-replace charm.land/fantasy => github.com/cloudwithax/fantasy v0.0.0-20260315210130-c464f2b8b38b
+replace charm.land/fantasy => github.com/cloudwithax/fantasy v0.0.0-20260417174913-afc5db2f2b14

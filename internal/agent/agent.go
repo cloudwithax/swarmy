@@ -415,7 +415,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 		StopWhen: []fantasy.StopCondition{
 			func(_ []fantasy.StepResult) bool {
 				cw := int64(largeModel.CatwalkCfg.ContextWindow)
-				tokens := currentSession.CompletionTokens + currentSession.PromptTokens
+				tokens := currentSession.ContextCompletionTokens + currentSession.ContextPromptTokens
 				remaining := cw - tokens
 				var threshold int64
 				if cw > largeContextWindowThreshold {
@@ -690,6 +690,12 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 
 	a.updateSessionUsage(largeModel, &currentSession, resp.TotalUsage, openrouterCost)
 
+	// After summarization the effective context is just the summary + any
+	// post-summary messages, so reset the context-pressure counters. The
+	// next step's OnStepFinish will populate them with fresh values.
+	currentSession.ContextPromptTokens = 0
+	currentSession.ContextCompletionTokens = 0
+
 	currentSession.SummaryMessageID = summaryMessage.ID
 	_, err = a.sessions.Save(genCtx, currentSession)
 	return err
@@ -955,6 +961,16 @@ func (a *sessionAgent) updateSessionUsage(model Model, session *session.Session,
 
 	session.CompletionTokens += usage.OutputTokens
 	session.PromptTokens += promptTokensForSessionUsage(usage)
+
+	// Track the latest step's usage separately for context-window pressure.
+	// Cumulative totals above are useful for cost/stats but don't represent
+	// current context size (each step's prompt is the full history, so
+	// cumulative grows far beyond the actual window, especially for
+	// providers without prompt caching).
+	if stepPrompt := promptTokensForSessionUsage(usage); stepPrompt > 0 || usage.OutputTokens > 0 {
+		session.ContextPromptTokens = stepPrompt
+		session.ContextCompletionTokens = usage.OutputTokens
+	}
 }
 
 func (a *sessionAgent) Cancel(sessionID string) {

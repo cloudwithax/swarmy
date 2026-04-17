@@ -39,17 +39,19 @@ func HasIncompleteTodos(todos []Todo) bool {
 }
 
 type Session struct {
-	ID               string
-	ParentSessionID  string
-	Title            string
-	MessageCount     int64
-	PromptTokens     int64
-	CompletionTokens int64
-	SummaryMessageID string
-	Cost             float64
-	Todos            []Todo
-	CreatedAt        int64
-	UpdatedAt        int64
+	ID                      string
+	ParentSessionID         string
+	Title                   string
+	MessageCount            int64
+	PromptTokens            int64
+	CompletionTokens        int64
+	ContextPromptTokens     int64
+	ContextCompletionTokens int64
+	SummaryMessageID        string
+	Cost                    float64
+	Todos                   []Todo
+	CreatedAt               int64
+	UpdatedAt               int64
 }
 
 type Service interface {
@@ -173,10 +175,12 @@ func (s *service) Save(ctx context.Context, session Session) (Session, error) {
 	}
 
 	dbSession, err := s.q.UpdateSession(ctx, db.UpdateSessionParams{
-		ID:               session.ID,
-		Title:            session.Title,
-		PromptTokens:     session.PromptTokens,
-		CompletionTokens: session.CompletionTokens,
+		ID:                      session.ID,
+		Title:                   session.Title,
+		PromptTokens:            session.PromptTokens,
+		CompletionTokens:        session.CompletionTokens,
+		ContextPromptTokens:     session.ContextPromptTokens,
+		ContextCompletionTokens: session.ContextCompletionTokens,
 		SummaryMessageID: sql.NullString{
 			String: session.SummaryMessageID,
 			Valid:  session.SummaryMessageID != "",
@@ -225,17 +229,19 @@ func (s service) fromDBItem(item db.Session) Session {
 		slog.Error("Failed to unmarshal todos", "session_id", item.ID, "error", err)
 	}
 	return Session{
-		ID:               item.ID,
-		ParentSessionID:  item.ParentSessionID.String,
-		Title:            item.Title,
-		MessageCount:     item.MessageCount,
-		PromptTokens:     item.PromptTokens,
-		CompletionTokens: item.CompletionTokens,
-		SummaryMessageID: item.SummaryMessageID.String,
-		Cost:             item.Cost,
-		Todos:            todos,
-		CreatedAt:        item.CreatedAt,
-		UpdatedAt:        item.UpdatedAt,
+		ID:                      item.ID,
+		ParentSessionID:         item.ParentSessionID.String,
+		Title:                   item.Title,
+		MessageCount:            item.MessageCount,
+		PromptTokens:            item.PromptTokens,
+		CompletionTokens:        item.CompletionTokens,
+		ContextPromptTokens:     item.ContextPromptTokens,
+		ContextCompletionTokens: item.ContextCompletionTokens,
+		SummaryMessageID:        item.SummaryMessageID.String,
+		Cost:                    item.Cost,
+		Todos:                   todos,
+		CreatedAt:               item.CreatedAt,
+		UpdatedAt:               item.UpdatedAt,
 	}
 }
 
